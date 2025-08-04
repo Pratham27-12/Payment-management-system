@@ -13,12 +13,11 @@ import static org.example.util.DateUtil.convertDdMmYyyyToEpochMilli;
 
 public class AuditTrailManagementServiceImpl implements AuditTrailManagementService {
     @Override
-    public CompletableFuture<List<AuditTrail>> getAuditTrailById(String id, String password) {
+    public CompletableFuture<List<AuditTrail>> getAuditTrailById(String id, String username, String password) {
         AuditTrailRepository auditTrailRepository = new AuditTrailRepositoryImpl();
-        return ValidatorUtil.validateUserManager(id, password).thenCompose(validationResponse -> {
+        return ValidatorUtil.validateUserManager(username, password).thenCompose(validationResponse -> {
             if(validationResponse.isValid())
                 return auditTrailRepository.getAuditTrailById(id);
-
             return CompletableFuture.failedFuture(
                     new IllegalAccessException("Only Finance Manager can access audit trail")
             );

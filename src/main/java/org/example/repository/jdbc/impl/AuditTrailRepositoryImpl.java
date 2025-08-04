@@ -79,8 +79,8 @@ public class AuditTrailRepositoryImpl implements AuditTrailRepository {
         auditTrail.setAmount(rs.getString(AMOUNT));
         auditTrail.setCurrency(rs.getString(CURRENCY));
         auditTrail.setUserName(rs.getString(USER_NAME));
-        auditTrail.setCreatedAt(rs.getString(CREATED_AT));
-        auditTrail.setUpdatedAt(rs.getString(UPDATED_AT));
+        auditTrail.setCreatedAt(rs.getLong(CREATED_AT));
+        auditTrail.setUpdatedAt(rs.getLong(UPDATED_AT));
         String category = rs.getString(CATEGORY);
         String status = rs.getString(STATUS);
         String type = rs.getString(TYPE);

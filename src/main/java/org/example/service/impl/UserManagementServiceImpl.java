@@ -43,7 +43,7 @@ public class UserManagementServiceImpl implements UserManagementService {
                      createUserResponse("User Role Updated Successfully", "SUCCESS")
                );
            }
-           return createUserResponse("Only Admin Can update the Role","FAILURE");
+           throw new RuntimeException("Only Admin Can update the Role");
         });
     }
 

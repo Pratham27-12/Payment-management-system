@@ -29,11 +29,11 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         PaymentRepository paymentRepository = new PaymentRepositoryImpl();
         return validateUserAdmin(userName, password).thenCompose(validateUserResponse -> {
             if (!validateUserResponse.isValid()) {
-                return createPaymentFailedResponse(validateUserResponse.getErrorMessage(), "FAILURE");
+                throw new RuntimeException(validateUserResponse.getErrorMessage());
             }
             return validatePayment(payment).thenCompose(validationResponse -> {
                 if (!validationResponse.isValid()) {
-                    return createPaymentFailedResponse(validateUserResponse.getErrorMessage(), "FAILURE");
+                    throw new RuntimeException(validationResponse.getErrorMessage());
                 }
                 return paymentRepository.createPayment(payment)
                         .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"));
@@ -46,7 +46,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         PaymentRepository paymentRepository = new PaymentRepositoryImpl();
         return validateUserManager(userName, password).thenCompose(validateUserResponse -> {
             if (!validateUserResponse.isValid()) {
-                return createPaymentFailedResponse(validateUserResponse.getErrorMessage(), "FAILURE");
+                throw new RuntimeException(validateUserResponse.getErrorMessage());
             }
             return paymentRepository.updatePaymentStatus(id, PaymentStatus.valueOf(status), userName)
                     .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS"));
@@ -105,7 +105,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         return paymentRepository.getAllPayments()
                 .thenCompose(payments -> {
                     if (payments.isEmpty()) {
-                        return createPaymentFailedResponse("No Payments Found", "FAILURE");
+                        throw new RuntimeException("No Payments Found");
                     }
                     return createPaymentSuccesResponse(payments, "","SUCCESS");
                 });
@@ -118,7 +118,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         return paymentRepository.getPaymentById(id)
                 .thenCompose(payment -> {
                     if (payment == null) {
-                        return createPaymentFailedResponse("Payment not found for ID: ", "FAILURE");
+                        throw new RuntimeException("Payment Not Found");
                     }
                     return createPaymentSuccesResponse(List.of(payment), "","SUCCESS");
                 });
@@ -164,13 +164,6 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
             report.setTotalNetBalance(Math.abs(totalIncoming - totalOutgoing));
             return report;
         });
-    }
-
-    private CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentFailedResponse(String message, String status) {
-        PaymentLifeCycleManagementResponse response = new PaymentLifeCycleManagementResponse();
-        response.setMessage(message);
-        response.setStatus(status);
-        return CompletableFuture.completedFuture(response);
     }
 
     private CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentSuccesResponse(List<Payment> payments, String message, String status) {

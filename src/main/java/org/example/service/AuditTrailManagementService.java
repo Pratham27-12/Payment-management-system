@@ -6,6 +6,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface AuditTrailManagementService {
-    CompletableFuture<List<AuditTrail>> getAuditTrailById(String id, String password);
+    CompletableFuture<List<AuditTrail>> getAuditTrailById(String id, String username, String password);
     CompletableFuture<List<AuditTrail>> getAuditTrailByCreatedAtRange(String startDate, String endDate, String password);
 }
