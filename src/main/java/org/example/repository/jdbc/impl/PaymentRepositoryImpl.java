@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.ACCOUNT_NAME;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.AMOUNT;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CATEGORY;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CREATED_AT;
@@ -52,11 +53,12 @@ public class PaymentRepositoryImpl implements PaymentRepository {
              PreparedStatement stmt = conn.prepareStatement(PaymentDetailsQueryConstant.createPaymentDetailsQuery())) {
             stmt.setString(1, payment.getId());
             stmt.setString(2, payment.getUserName());
-            stmt.setString(3, payment.getAmount());
-            stmt.setString(4, payment.getCurrency());
-            stmt.setString(5, payment.getType() != null ? payment.getType().name() : null);
-            stmt.setString(6, payment.getCategory() != null ? payment.getCategory().name() : null);
-            stmt.setString(7, payment.getStatus() != null ? payment.getStatus().name() : null);
+            stmt.setString(3, payment.getAccountName());
+            stmt.setString(4, payment.getAmount());
+            stmt.setString(5, payment.getCurrency());
+            stmt.setString(6, payment.getType() != null ? payment.getType().name() : null);
+            stmt.setString(7, payment.getCategory() != null ? payment.getCategory().name() : null);
+            stmt.setString(8, payment.getStatus() != null ? payment.getStatus().name() : null);
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error creating Payment", e);
@@ -120,6 +122,7 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         payment.setId(rs.getString(PAYMENT_ID));
         payment.setUserName(rs.getString(USER_NAME));
         payment.setAmount(rs.getString(AMOUNT));
+        payment.setAccountName(rs.getString(ACCOUNT_NAME));
         payment.setCategory(rs.getString(CATEGORY) != null ? PaymentCategory.valueOf(rs.getString(CATEGORY)) : null);
         payment.setStatus(rs.getString(STATUS) != null ? PaymentStatus.valueOf(rs.getString(STATUS)) : null);
         payment.setType(rs.getString(TYPE) != null ? PaymentType.valueOf(rs.getString(TYPE)) : null);

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS payment_system.payment_details (
     payment_type payment_type NOT NULL,
     category payment_category NOT NULL,
     user_name varchar(30) NOT NULL,
+    account_name varchar(30) NOT NULL,
     status  payment_status NOT NULL,
     created_at bigint NOT NULL DEFAULT (EXTRACT(epoch FROM now()) * 1000::numeric),
     updated_at bigint NOT NULL DEFAULT (EXTRACT(epoch FROM now()) * 1000::numeric),

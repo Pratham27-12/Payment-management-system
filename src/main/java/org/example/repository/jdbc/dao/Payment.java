@@ -11,6 +11,7 @@ public class Payment {
     private PaymentCategory category;
     private PaymentType type;
     private PaymentStatus status;
+    private String accountName;
     private String userName;
     private Long createdAt;
     private Long updatedAt;
@@ -61,6 +62,14 @@ public class Payment {
 
     public void setStatus(PaymentStatus status) {
         this.status = status;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
     }
 
     public String getUserName() {

@@ -9,12 +9,12 @@ BEGIN
 
         INSERT INTO payment_system.audit_trail (
             payment_id, revision_count, revision_type,
-            amount, currency, payment_type, category, user_name,
+            amount, currency, payment_type, category, user_name,account_name,
             status, created_at, updated_at
         ) VALUES (
             NEW.payment_id, NEW.revision_count, 'CREATE',
             NEW.amount, NEW.currency, NEW.payment_type, NEW.category, NEW.user_name,
-            NEW.status, NEW.created_at, NEW.updated_at
+            NEW.account_name, NEW.status, NEW.created_at, NEW.updated_at
         );
 
         RETURN NEW;
@@ -29,12 +29,12 @@ BEGIN
 
         INSERT INTO payment_system.audit_trail (
             payment_id, revision_count, revision_type,
-            amount, currency, payment_type, category, user_name,
+            amount, currency, payment_type, category, user_name, account_name,
             status, created_at, updated_at
         ) VALUES (
              NEW.payment_id, new_revision, 'UPDATE',
             NEW.amount, NEW.currency, NEW.payment_type, NEW.category, NEW.user_name,
-            NEW.status, (EXTRACT(epoch FROM now()) * 1000::numeric), NEW.updated_at
+            NEW.account_name, NEW.status, (EXTRACT(epoch FROM now()) * 1000::numeric), NEW.updated_at
         );
 
         RETURN NEW;
@@ -42,12 +42,12 @@ BEGIN
     ELSIF TG_OP = 'DELETE' THEN
         INSERT INTO payment_system.audit_trail (
              payment_id, revision_count, revision_type,
-            amount, currency, payment_type, category, user_name,
+            amount, currency, payment_type, category, user_name, account_name,
             status, created_at, updated_at
         ) VALUES (
              OLD.payment_id, OLD.revision_count, 'DELETE',
             OLD.amount, OLD.currency, OLD.payment_type, OLD.category, OLD.user_name,
-            OLD.status, (EXTRACT(epoch FROM now()) * 1000::numeric), OLD.updated_at
+            OLD.account_name, OLD.status, (EXTRACT(epoch FROM now()) * 1000::numeric), OLD.updated_at
         );
 
         RETURN OLD;
