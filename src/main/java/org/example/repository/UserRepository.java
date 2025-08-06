@@ -11,4 +11,5 @@ public interface UserRepository {
     CompletableFuture<User> getUserByUserName(String userName);
     CompletableFuture<Void> createUser(User user);
     CompletableFuture<Void> updateUserRole(String userName, UserRole role);
+    CompletableFuture<Void> updateUserPassword(String userName, String password);
 }

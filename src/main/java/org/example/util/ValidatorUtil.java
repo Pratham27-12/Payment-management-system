@@ -6,11 +6,20 @@ import org.example.model.enums.UserRole;
 import org.example.repository.UserRepository;
 import org.example.repository.jdbc.dao.Payment;
 import org.example.repository.jdbc.impl.UserRepositoryImpl;
+import org.example.service.impl.UserManagementServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CompletableFuture;
 
+@Component
 public class ValidatorUtil {
-    static UserRepository userRepository = new UserRepositoryImpl();
+
+    private static UserRepository userRepository;
+
+    public ValidatorUtil(@Autowired UserRepositoryImpl userRepositoryImpl) {
+        userRepository = userRepositoryImpl;
+    }
 
     public static CompletableFuture<ValidationResponse> validatePayment(Payment payment) {
         if (isAmountValid(payment.getAmount()) && isCurrencyValid(payment.getCurrency()) && payment.getStatus().equals(PaymentStatus.PENDING)) {

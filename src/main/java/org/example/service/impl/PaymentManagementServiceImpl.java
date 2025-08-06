@@ -1,13 +1,13 @@
 package org.example.service.impl;
 
-import org.example.model.Report;
-import org.example.model.PaymentLifeCycleManagementResponse;
-import org.example.model.enums.PaymentStatus;
+import org.example.model.response.ReportResponse;
+import org.example.model.response.PaymentLifeCycleManagementResponse;
 import org.example.model.enums.PaymentType;
 import org.example.repository.PaymentRepository;
 import org.example.repository.jdbc.dao.Payment;
 import org.example.repository.jdbc.impl.PaymentRepositoryImpl;
 import org.example.service.PaymentManagementService;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -19,43 +19,29 @@ import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
 import static org.example.util.DateUtil.convertEpochToDateAndReturnMonth;
-import static org.example.util.ValidatorUtil.validatePayment;
-import static org.example.util.ValidatorUtil.validateUserAdmin;
-import static org.example.util.ValidatorUtil.validateUserManager;
 
+@Service
 public class PaymentManagementServiceImpl implements PaymentManagementService {
-    @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentRecord(Payment payment, String userName, String password) {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
-        return validateUserAdmin(userName, password).thenCompose(validateUserResponse -> {
-            if (!validateUserResponse.isValid()) {
-                throw new RuntimeException(validateUserResponse.getErrorMessage());
-            }
-            return validatePayment(payment).thenCompose(validationResponse -> {
-                if (!validationResponse.isValid()) {
-                    throw new RuntimeException(validationResponse.getErrorMessage());
-                }
-                return paymentRepository.createPayment(payment)
-                        .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"));
-            });
-        });
+    private final PaymentRepository paymentRepository;
+
+    public PaymentManagementServiceImpl(PaymentRepositoryImpl paymentRepositoryImpl) {
+        this.paymentRepository = paymentRepositoryImpl;
     }
 
     @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> updatePayment(String id, String userName, String password, String status) {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
-        return validateUserManager(userName, password).thenCompose(validateUserResponse -> {
-            if (!validateUserResponse.isValid()) {
-                throw new RuntimeException(validateUserResponse.getErrorMessage());
-            }
-            return paymentRepository.updatePaymentStatus(id, PaymentStatus.valueOf(status), userName)
+    public CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentRecord(Payment payment) {
+        return paymentRepository.createPayment(payment)
+                .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"));
+    }
+
+    @Override
+    public CompletableFuture<PaymentLifeCycleManagementResponse> updatePayment(String id, String userName, Payment payment) {
+        return  paymentRepository.updatePayment(id, payment, userName)
                     .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS"));
-        });
     }
 
     @Override
-    public CompletableFuture<Report> generateMonthlyReport(int month, int year) {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
+    public CompletableFuture<ReportResponse> generateMonthlyReport(int month, int year) {
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
@@ -67,9 +53,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     }
 
     @Override
-    public CompletableFuture<Report> generateQuarterlyReport(int quarter, int year) {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
-
+    public CompletableFuture<ReportResponse> generateQuarterlyReport(int quarter, int year) {
         LocalDate startDate;
         LocalDate endDate = switch (quarter) {
             case 1 -> {
@@ -100,77 +84,86 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
 
     @Override
     public CompletableFuture<PaymentLifeCycleManagementResponse> getAllPayment() {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
-
         return paymentRepository.getAllPayments()
                 .thenCompose(payments -> {
                     if (payments.isEmpty()) {
                         throw new RuntimeException("No Payments Found");
                     }
-                    return createPaymentSuccesResponse(payments, "","SUCCESS");
+                    return createPaymentSuccesResponse(payments, "", "SUCCESS");
                 });
     }
 
     @Override
     public CompletableFuture<PaymentLifeCycleManagementResponse> getPaymentById(String id) {
-        PaymentRepository paymentRepository = new PaymentRepositoryImpl();
-
         return paymentRepository.getPaymentById(id)
                 .thenCompose(payment -> {
                     if (payment == null) {
                         throw new RuntimeException("Payment Not Found");
                     }
-                    return createPaymentSuccesResponse(List.of(payment), "","SUCCESS");
+                    return createPaymentSuccesResponse(List.of(payment), "", "SUCCESS");
                 });
     }
 
-    private CompletableFuture<Report> buildReport(CompletableFuture<List<Payment>> paymentsFuture, String reportType) {
-        Report report = new Report();
+    private CompletableFuture<ReportResponse> buildReport(CompletableFuture<List<Payment>> paymentsFuture, String reportType) {
         return paymentsFuture.thenApply(payments -> {
             if (payments.isEmpty()) {
-                report.setStatus("FAILURE");
-                report.setMessage("No Payments Found for the specified period");
-                return report;
+                return failedReport(reportType, "No Payments Found for the specified period");
             }
 
-            Map<String, Report.Data> reportData = payments.stream().collect(Collectors.groupingBy(
-                    payment -> {
-                        return convertEpochToDateAndReturnMonth(payment.getCreatedAt());
-                    },
-                    LinkedHashMap::new,
-                    Collectors.collectingAndThen(Collectors.toList(), monthPayments -> {
-                        Report.Data data = new Report.Data();
-                        data.inComingPayments = monthPayments.stream()
-                                .filter(p -> p.getType() == PaymentType.INCOMING)
-                                .mapToLong(p -> Long.parseLong(p.getAmount()))
-                                .sum();
-                        data.outGoingPayments = monthPayments.stream()
-                                .filter(p -> p.getType() == PaymentType.OUTGOING)
-                                .mapToLong(p -> Long.parseLong(p.getAmount()))
-                                .sum();
-                        data.netBalance = data.inComingPayments - data.outGoingPayments;
-                        return data;
-                    })
-            ));
+            Map<String, ReportResponse.Data> reportData = payments.stream()
+                    .collect(Collectors.groupingBy(
+                            this::getPaymentMonth,
+                            LinkedHashMap::new,
+                            Collectors.collectingAndThen(Collectors.toList(), this::createReportData)
+                    ));
 
             long totalIncoming = reportData.values().stream().mapToLong(d -> d.inComingPayments).sum();
             long totalOutgoing = reportData.values().stream().mapToLong(d -> d.outGoingPayments).sum();
 
-
-            report.setReportType(reportType);
-            report.setDate(LocalDate.now());
-            report.setReportData(reportData);
-            report.setBalanceType(totalIncoming > totalOutgoing ? "CREDIT" : "DEBIT");
-            report.setTotalNetBalance(Math.abs(totalIncoming - totalOutgoing));
-            return report;
+            return ReportResponse.builder()
+                    .reportType(reportType)
+                    .date(LocalDate.now())
+                    .balanceType(totalIncoming > totalOutgoing ? "CREDIT" : "DEBIT")
+                    .reportData(reportData)
+                    .totalNetBalance(Math.abs(totalIncoming - totalOutgoing))
+                    .build();
         });
     }
 
+    private String getPaymentMonth(Payment payment) {
+        return convertEpochToDateAndReturnMonth(payment.getCreatedAt());
+    }
+
+    private ReportResponse.Data createReportData(List<Payment> monthPayments) {
+        ReportResponse.Data data = new ReportResponse.Data();
+        data.inComingPayments = calculateTotalAmount(monthPayments, PaymentType.INCOMING);
+        data.outGoingPayments = calculateTotalAmount(monthPayments, PaymentType.OUTGOING);
+        data.netBalance = data.inComingPayments - data.outGoingPayments;
+        return data;
+    }
+
+    private long calculateTotalAmount(List<Payment> payments, PaymentType type) {
+        return payments.stream()
+                .filter(payment -> payment.getType() == type)
+                .mapToLong(payment -> Long.parseLong(payment.getAmount()))
+                .sum();
+    }
+
+    private static ReportResponse failedReport(String reportType, String message) {
+        return ReportResponse.builder()
+                .reportType(reportType)
+                .date(LocalDate.now())
+                .status("FAILED")
+                .message(message)
+                .build();
+    }
+
     private CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentSuccesResponse(List<Payment> payments, String message, String status) {
-        PaymentLifeCycleManagementResponse response = new PaymentLifeCycleManagementResponse();
-        response.setPayments(payments);
-        response.setMessage(message);
-        response.setStatus(status);
+        PaymentLifeCycleManagementResponse response = PaymentLifeCycleManagementResponse.builder()
+                .payments(payments)
+                .message(message)
+                .status(status)
+                .build();
         return CompletableFuture.completedFuture(response);
     }
 }

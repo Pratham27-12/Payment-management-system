@@ -1,6 +1,6 @@
 package org.example.util;
 
-import org.example.model.Report;
+import org.example.model.response.ReportResponse;
 import org.example.repository.jdbc.dao.AuditTrail;
 import org.example.repository.jdbc.dao.Payment;
 import org.example.repository.jdbc.dao.User;
@@ -81,10 +81,10 @@ public class PrinterUtil {
         System.out.format("+------------+-----------------+----------------------+--------------+%n");
     }
 
-    public static void printReport(Report report) {
-        System.out.println("Report: " + report.getReportType());
+    public static void printReport(ReportResponse reportResponse) {
+        System.out.println("Report: " + reportResponse.getReportType());
 
-        LocalDate date = report.getDate();
+        LocalDate date = reportResponse.getDate();
         String formattedDate = date.atStartOfDay().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         System.out.println("Generated At: " + formattedDate);
         System.out.println();
@@ -96,9 +96,9 @@ public class PrinterUtil {
         long totalOutgoing = 0L;
         long totalNet = 0L;
 
-        for (Map.Entry<String, Report.Data> entry : report.getReportData().entrySet()) {
+        for (Map.Entry<String, ReportResponse.Data> entry : reportResponse.getReportData().entrySet()) {
             String month = entry.getKey();
-            Report.Data data = entry.getValue();
+            ReportResponse.Data data = entry.getValue();
 
             long in = data.inComingPayments != null ? data.inComingPayments : 0L;
             long out = data.outGoingPayments != null ? data.outGoingPayments : 0L;
