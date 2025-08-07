@@ -4,7 +4,6 @@ import org.example.repository.AuditTrailRepository;
 import org.example.repository.jdbc.dao.AuditTrail;
 import org.example.repository.jdbc.impl.AuditTrailRepositoryImpl;
 import org.example.service.AuditTrailManagementService;
-import org.example.util.ValidatorUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

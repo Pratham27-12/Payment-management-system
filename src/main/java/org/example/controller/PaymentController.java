@@ -15,8 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import static org.example.model.route.PaymentRoute.CREATE;
+import static org.example.model.route.PaymentRoute.GET_ALL;
+import static org.example.model.route.PaymentRoute.PAYMENTS_BASE_URL;
+import static org.example.model.route.PaymentRoute.ID;
+import static org.example.model.route.PaymentRoute.UPDATE;
+
 @RestController
-@RequestMapping("/api/v1/payments")
+@RequestMapping(PAYMENTS_BASE_URL)
 public class PaymentController {
 
     private final PaymentManagementService paymentManagementService;
@@ -25,20 +31,20 @@ public class PaymentController {
         this.paymentManagementService = paymentManagementServiceImpl;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(ID)
     @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
     public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> getPaymentById(
             @PathVariable("id") String id) {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(paymentManagementService.getPaymentById(id));
     }
 
-    @GetMapping("")
+    @GetMapping(GET_ALL)
     @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
     public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> getAllPayment() {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(paymentManagementService.getAllPayment());
     }
 
-    @PostMapping("/create")
+    @PostMapping(CREATE)
     @PreAuthorize("hasRole('ADMIN')")
     public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> createPaymentRecord(
             @RequestBody Payment payment) {
@@ -46,7 +52,7 @@ public class PaymentController {
                 paymentManagementService.createPaymentRecord(payment));
     }
 
-    @PostMapping("/update/{id}")
+    @PostMapping(UPDATE + ID)
     @PreAuthorize("hasRole('FINANCE_MANAGER')")
     public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> updatePaymentRecord(
             @PathVariable("id") String id,

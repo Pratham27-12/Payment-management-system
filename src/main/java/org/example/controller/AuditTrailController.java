@@ -14,8 +14,13 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.List;
 
+import static org.example.model.route.PaymentRoute.AUDIT_TRAIL_BASE_URL;
+import static org.example.model.route.PaymentRoute.END_DATE;
+import static org.example.model.route.PaymentRoute.ID;
+import static org.example.model.route.PaymentRoute.START_DATE;
+
 @RestController
-@RequestMapping("/api/v1/audit-trail")
+@RequestMapping(AUDIT_TRAIL_BASE_URL)
 public class AuditTrailController {
 
     private final AuditTrailManagementService auditTrailManagementService;
@@ -24,7 +29,7 @@ public class AuditTrailController {
         this.auditTrailManagementService = auditTrailManagementServiceImpl;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(ID)
     @PreAuthorize("hasRole('ADMIN') or hasRole('FINANCE_MANAGER') or hasRole('VIEWER')")
     public DeferredResult<ResponseEntity<List<AuditTrail>>> getAuditTrialById(
             @PathVariable("id") String id) {
@@ -32,7 +37,7 @@ public class AuditTrailController {
                 auditTrailManagementService.getAuditTrailById(id));
     }
 
-    @GetMapping("/start-date/{startDate}/end-date/{endDate}")
+    @GetMapping(START_DATE + END_DATE)
     @PreAuthorize("hasRole('ADMIN') or hasRole('FINANCE_MANAGER') or hasRole('VIEWER')")
     public DeferredResult<ResponseEntity<List<AuditTrail>>> getAuditTrailByCreatedAtRange(
             @PathVariable("startDate") String startDate, @PathVariable("endDate") String endDate) {
