@@ -6,13 +6,14 @@ import org.example.model.enums.PaymentType;
 import org.example.repository.AuditTrailRepository;
 import org.example.repository.jdbc.constants.AuditTrailQueryConstant;
 import org.example.repository.jdbc.dao.AuditTrail;
-import org.example.util.DBConnectionUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,79 +27,60 @@ import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.TYPE
 import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.UPDATED_AT;
 import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.USER_NAME;
 
+@Component
 public class AuditTrailRepositoryImpl implements AuditTrailRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public AuditTrailRepositoryImpl(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    private final RowMapper<AuditTrail> auditTrailRowMapper = new RowMapper<AuditTrail>() {
+        @Override
+        public AuditTrail mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return AuditTrail.builder()
+                    .id(rs.getString(PAYMENT_ID))
+                    .amount(rs.getString(AMOUNT))
+                    .category(PaymentCategory.valueOf(rs.getString(CATEGORY)))
+                    .type(PaymentType.valueOf(rs.getString(TYPE)))
+                    .status(PaymentStatus.valueOf(rs.getString(STATUS)))
+                    .userName(rs.getString(USER_NAME))
+                    .createdAt(rs.getLong(CREATED_AT))
+                    .updatedAt(rs.getLong(UPDATED_AT))
+                    .currency(rs.getString(CURRENCY))
+                    .build();
+        }
+    };
 
     @Override
     public CompletableFuture<List<AuditTrail>> getAuditTrailById(String id) {
-        List<AuditTrail> auditTrails = new ArrayList<>();
+        try {
+            List<AuditTrail> auditTrails = jdbcTemplate.query(
+                    AuditTrailQueryConstant.getAuditTrailById(),
+                    auditTrailRowMapper,
+                    id
+            );
 
-        try (Connection conn = DBConnectionUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(AuditTrailQueryConstant.getAuditTrailById())) {
-
-            stmt.setString(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    auditTrails.add(mapResultSetToAuditTrail(rs));
-                }
-            }
-        } catch (SQLException e) {
+            return CompletableFuture.completedFuture(auditTrails);
+        } catch (Exception e) {
             throw new RuntimeException("Error fetching audit trail by ID: " + id, e);
         }
-
-        return CompletableFuture.completedFuture(auditTrails);
     }
 
     @Override
     public CompletableFuture<List<AuditTrail>> getAuditTrailByCreatedAtRange(Long startDateEpoch, Long endDateEpoch) {
-        List<AuditTrail> auditTrails = new ArrayList<>();
+        try {
+            List<AuditTrail> auditTrails = jdbcTemplate.query(
+                    AuditTrailQueryConstant.getAuditTrailByCreatedAtRange(),
+                    auditTrailRowMapper,
+                    startDateEpoch,
+                    endDateEpoch
+            );
 
-        try (Connection conn = DBConnectionUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(AuditTrailQueryConstant.getAuditTrailByCreatedAtRange())) {
-
-            stmt.setLong(1, startDateEpoch);
-            stmt.setLong(2, endDateEpoch);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    auditTrails.add(mapResultSetToAuditTrail(rs));
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error fetching audit trails in date range", e);
+            return CompletableFuture.completedFuture(auditTrails);
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching audit trails by date range: ", e);
         }
-
-        return CompletableFuture.completedFuture(auditTrails);
-
-    }
-
-    private AuditTrail mapResultSetToAuditTrail(ResultSet rs) throws SQLException {
-        AuditTrail auditTrail = new AuditTrail();
-        auditTrail.setId(rs.getString(PAYMENT_ID));
-        auditTrail.setAmount(rs.getString(AMOUNT));
-        auditTrail.setCurrency(rs.getString(CURRENCY));
-        auditTrail.setUserName(rs.getString(USER_NAME));
-        auditTrail.setCreatedAt(rs.getLong(CREATED_AT));
-        auditTrail.setUpdatedAt(rs.getLong(UPDATED_AT));
-        String category = rs.getString(CATEGORY);
-        String status = rs.getString(STATUS);
-        String type = rs.getString(TYPE);
-        auditTrail.setCategory(category != null ? PaymentCategory.valueOf(category) : null);
-        auditTrail.setStatus(status != null ? PaymentStatus.valueOf(status) : null);
-        auditTrail.setType(type != null ? PaymentType.valueOf(type) : null);
-        return auditTrail;
-    }
-
-    public static void main(String[] args) {
-        AuditTrailRepository repository = new AuditTrailRepositoryImpl();
-
-        repository.getAuditTrailById("PAY12345").whenComplete((res, err) -> {
-            if (err != null)
-                System.err.println("Error fetching audit trail by ID: " + err.getMessage());
-
-            System.out.println("Audit Trail for ID PAY12345:");
-            res.forEach(System.out::println);
-        });
     }
 }

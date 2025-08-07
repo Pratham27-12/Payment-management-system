@@ -25,4 +25,9 @@ public class UserDetailsQueryConstant {
         return String.format("UPDATE %s SET %s = ?::user_role WHERE %s = ?", TABLE,
                  USER_ROLE, USER_NAME);
     }
+
+    public static String updateUserPasswordByUserName() {
+        return String.format("UPDATE %s SET %s = ? WHERE %s = ?", TABLE,
+                PASSWORD, USER_NAME);
+    }
 }

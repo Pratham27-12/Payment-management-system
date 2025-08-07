@@ -1,0 +1,307 @@
+
+@startuml PaymentSystemClassDiagram
+
+
+    class PaymentLifeCycleManagementResponse {
+        - message: String
+        - payments: List<Payment>
+        - status: String
+    }
+
+    class UserLifeCycleManagementResponse {
+        - status: String
+        - message: String
+        - users: List<User>
+    }
+
+    class ValidationResponse {
+        - valid: boolean
+        - errMsg: String
+        + ValidationResponse(valid: boolean)
+        + ValidationResponse(errMsg: String)
+        + isValid(): boolean
+        + getErrorMessage(): String
+    }
+
+    class Report {
+        - reportType: String
+        - date: LocalDate
+        - reportData: Map<String, Data>
+        - balanceType: String
+        - totalNetBalance: Long
+        - status: String
+        - message: String
+    }
+
+    class Data {
+        + inComingPayments: Long
+        + outGoingPayments: Long
+        + netBalance: Long
+    }
+
+
+    enum PaymentCategory {
+        SALARY
+        INVOICE
+        REFUND
+        VENDOR_SETTLEMENT
+    }
+
+    enum PaymentStatus {
+        PENDING
+        PROCESSING
+        COMPLETED
+    }
+
+    enum PaymentType {
+        INCOMING
+        OUTGOING
+    }
+
+    enum UserRole {
+        ADMIN
+        FINANCE_MANAGER
+        VIEWER
+    }
+
+
+    class AuditTrail {
+        - id: String
+        - userName: String
+        - amount: String
+        - currency: String
+        - category: PaymentCategory
+        - type: PaymentType
+        - status: PaymentStatus
+        - createdAt: Long
+        - updatedAt: Long
+        + toString(): String
+    }
+
+    class Payment {
+        - id: String
+        - amount: String
+        - currency: String
+        - category: PaymentCategory
+        - type: PaymentType
+        - status: PaymentStatus
+        - accountName: String
+        - userName: String
+        - createdAt: Long
+        - updatedAt: Long
+        + toString(): String
+    }
+
+    class User {
+        - id: String
+        - username: String
+        - password: String
+        - role: UserRole
+        + User()
+        + User(id: String, username: String, password: String, role: UserRole)
+        + toString(): String
+    }
+
+
+    class AuditTrailQueryConstant {
+        + {static} PAYMENT_ID: String
+        + {static} AMOUNT: String
+        + {static} CURRENCY: String
+        + {static} TYPE: String
+        + {static} CATEGORY: String
+        + {static} STATUS: String
+        + {static} USER_NAME: String
+        + {static} CREATED_AT: String
+        + {static} UPDATED_AT: String
+        + {static} TABLE: String
+        + {static} getAuditTrailById(): String
+        + {static} getAuditTrailByCreatedAtRange(): String
+    }
+
+    class PaymentDetailsQueryConstant {
+        + {static} PAYMENT_ID: String
+        + {static} AMOUNT: String
+        + {static} CURRENCY: String
+        + {static} TYPE: String
+        + {static} CATEGORY: String
+        + {static} USER_NAME: String
+        + {static} ACCOUNT_NAME: String
+        + {static} STATUS: String
+        + {static} CREATED_AT: String
+        + {static} UPDATED_AT: String
+        + {static} TABLE: String
+        + {static} createPaymentDetailsQuery(): String
+        + {static} updatePaymentDetailsById(): String
+        + {static} getPaymentDetailsById(): String
+        + {static} getAllPaymentDetails(): String
+        + {static} getPaymentDetailsByCreatedAtRange(): String
+    }
+
+    class UserDetailsQueryConstant {
+        + {static} USER_ID: String
+        + {static} USER_NAME: String
+        + {static} USER_ROLE: String
+        + {static} PASSWORD: String
+        + {static} TABLE: String
+        + {static} getAllUserDetails(): String
+        + {static} getUserDetailsByUserName(): String
+        + {static} createUserDetails(): String
+        + {static} updateUserRoleByUserName(): String
+    }
+
+    class AuditTrailRepositoryImpl {
+        + getAuditTrailById(id: String): CompletableFuture<List<AuditTrail>>
+        + getAuditTrailByCreatedAtRange(startDateEpoch: Long, endDateEpoch: Long): CompletableFuture<List<AuditTrail>>
+        - mapResultSetToAuditTrail(rs: ResultSet): AuditTrail
+        + {static} main(args: String[]): void
+    }
+
+    class PaymentRepositoryImpl {
+        + getPaymentById(id: String): CompletableFuture<Payment>
+        + createPayment(payment: Payment): CompletableFuture<Void>
+        + updatePaymentStatus(id: String, status: PaymentStatus, userName: String): CompletableFuture<Void>
+        + getAllPayments(): CompletableFuture<List<Payment>>
+        + findPaymentsBetween(startDate: Long, endDate: Long): CompletableFuture<List<Payment>>
+        - mapResultSetToPayment(rs: ResultSet): Payment
+        + {static} main(args: String[]): void
+    }
+
+    class UserRepositoryImpl {
+        + getAllUsers(): CompletableFuture<List<User>>
+        + getUserByUserName(userName: String): CompletableFuture<User>
+        + createUser(user: User): CompletableFuture<Void>
+        + updateUserRole(userName: String, role: UserRole): CompletableFuture<Void>
+        + {static} main(args: String[]): void
+    }
+
+    class AuditTrailManagementServiceImpl {
+        + getAuditTrailById(id: String, username: String, password: String): CompletableFuture<List<AuditTrail>>
+        + getAuditTrailByCreatedAtRange(startDate: String, endDate: String, password: String): CompletableFuture<List<AuditTrail>>
+    }
+
+    class PaymentManagementServiceImpl {
+        + createPaymentRecord(payment: Payment, userName: String, password: String): CompletableFuture<PaymentLifeCycleManagementResponse>
+        + updatePayment(id: String, userName: String, password: String, status: String): CompletableFuture<PaymentLifeCycleManagementResponse>
+        + generateMonthlyReport(month: int, year: int): CompletableFuture<Report>
+        + generateQuarterlyReport(quarter: int, year: int): CompletableFuture<Report>
+        + getAllPayment(): CompletableFuture<PaymentLifeCycleManagementResponse>
+        + getPaymentById(id: String): CompletableFuture<PaymentLifeCycleManagementResponse>
+        - buildReport(paymentsFuture: CompletableFuture<List<Payment>>, reportType: String): CompletableFuture<Report>
+        - createPaymentSuccesResponse(payments: List<Payment>, message: String, status: String): CompletableFuture<PaymentLifeCycleManagementResponse>
+    }
+
+    class UserManagementServiceImpl {
+        + createUser(userName: String, password: String): CompletableFuture<UserLifeCycleManagementResponse>
+        + updateUserRole(userName: String, password: String, userToUpdate: String, role: String): CompletableFuture<UserLifeCycleManagementResponse>
+        + verifyUser(userName: String, password: String): CompletableFuture<UserRole>
+        + getAllUsers(): CompletableFuture<List<User>>
+        - createUserResponse(message: String, status: String): CompletableFuture<UserLifeCycleManagementResponse>
+    }
+
+
+    class ValidatorUtil {
+        - {static} userRepository: UserRepository
+        + {static} validatePayment(payment: Payment): CompletableFuture<ValidationResponse>
+        + {static} validateUserAdmin(userName: String, password: String): CompletableFuture<ValidationResponse>
+        + {static} validateUserManager(userName: String, password: String): CompletableFuture<ValidationResponse>
+        - {static} validatePassword(password: String, hashedPassword: String): CompletableFuture<ValidationResponse>
+        - {static} isAmountValid(amount: String): boolean
+        - {static} isCurrencyValid(curr: String): boolean
+    }
+
+    class DateUtil {
+        + {static} convertDdMmYyyyToEpochMilli(dateString: String): long
+        + {static} convertEpochToDateAndReturnMonth(epochMillis: long): String
+    }
+
+    class PasswordUtil {
+        + {static} hashPassword(plainPassword: String): String
+        + {static} checkPassword(plainPassword: String, hashedPassword: String): boolean
+        + {static} main(args: String[]): void
+    }
+
+    class DBConnectionUtil {
+        - {static} PROPERTIES_FILE: String
+        - {static} dataSource: HikariDataSource
+        - {static} initializeDataSource(): void
+        - {static} loadProperties(): Properties
+        - {static} setupHikariDataSource(properties: Properties): void
+        + {static} getConnection(): Connection
+        + {static} closeConnection(conn: Connection): void
+        + {static} shutdown(): void
+    }
+
+
+' Relationships
+Report +-- Data
+
+' Enum relationships
+AuditTrail --> PaymentCategory
+AuditTrail --> PaymentStatus
+AuditTrail --> PaymentType
+Payment --> PaymentCategory
+Payment --> PaymentStatus
+Payment --> PaymentType
+User --> UserRole
+
+' Repository usage in servicesusesuses
+PaymentManagementServiceImpl --> Report : uses
+
+' Repository implementations use constants
+AuditTrailRepositoryImpl --> AuditTrailQueryConstant : uses
+PaymentRepositoryImpl --> PaymentDetailsQueryConstant : uses
+UserRepositoryImpl --> UserDetailsQueryConstant : uses
+
+' Repository implementations use DBConnectionUtil
+AuditTrailRepositoryImpl --> DBConnectionUtil : uses
+PaymentRepositoryImpl --> DBConnectionUtil : uses
+UserRepositoryImpl --> DBConnectionUtil : uses
+
+' Services use validators and utils
+AuditTrailManagementServiceImpl --> ValidatorUtil : uses
+AuditTrailManagementServiceImpl --> DateUtil : uses
+PaymentManagementServiceImpl --> ValidatorUtil : uses
+PaymentManagementServiceImpl --> DateUtil : uses
+UserManagementServiceImpl --> ValidatorUtil : uses
+UserManagementServiceImpl --> PasswordUtil : uses
+
+' ValidatorUtil uses repositories and password util
+ValidatorUtil --> UserRepositoryImpl : uses
+ValidatorUtil --> PasswordUtil : uses
+
+' Response models contain domain objects
+PaymentLifeCycleManagementResponse --> Payment : contains
+UserLifeCycleManagementResponse --> User : contains
+
+
+
+' Services use repository interfaces instead of implementations
+AuditTrailManagementServiceImpl --> AuditTrailRepositoryImpl : uses
+PaymentManagementServiceImpl --> PaymentRepositoryImpl : uses
+UserManagementServiceImpl --> UserRepositoryImpl : uses
+
+' Validation responses used by services
+AuditTrailManagementServiceImpl --> ValidationResponse : uses
+PaymentManagementServiceImpl --> ValidationResponse : uses
+UserManagementServiceImpl --> ValidationResponse : uses
+
+' Services return response objects
+AuditTrailManagementServiceImpl --> PaymentLifeCycleManagementResponse : returns
+PaymentManagementServiceImpl --> PaymentLifeCycleManagementResponse : returns
+UserManagementServiceImpl --> UserLifeCycleManagementResponse : returns
+
+' Repository implementations return domain objects
+AuditTrailRepositoryImpl --> AuditTrail : returns
+PaymentRepositoryImpl --> Payment : returns
+UserRepositoryImpl --> User : returns
+
+' ValidatorUtil returns ValidationResponse
+ValidatorUtil --> ValidationResponse : returns
+
+' Report contains multiple Data objects
+Report --> Data : aggregates
+
+' AuditTrail created from Payment operations
+Payment --> AuditTrail : creates
+
+@enduml
