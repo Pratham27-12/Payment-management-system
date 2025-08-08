@@ -7,11 +7,14 @@ import org.example.repository.PaymentRepository;
 import org.example.repository.jdbc.dao.Payment;
 import org.example.repository.jdbc.impl.PaymentRepositoryImpl;
 import org.example.service.PaymentManagementService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -23,21 +26,29 @@ import static org.example.util.DateUtil.convertEpochToDateAndReturnMonth;
 @Service
 public class PaymentManagementServiceImpl implements PaymentManagementService {
     private final PaymentRepository paymentRepository;
-
-    public PaymentManagementServiceImpl(PaymentRepositoryImpl paymentRepositoryImpl) {
+    private final Map<String, Double> exchangeRates;
+    public PaymentManagementServiceImpl(PaymentRepositoryImpl paymentRepositoryImpl, @Value("#{${currency.to.inr.map:{T(java.util.Collections).emptyMap()}}}") Map<String, Double> exchangeRates) {
         this.paymentRepository = paymentRepositoryImpl;
+        this.exchangeRates = exchangeRates;
     }
 
     @Override
     public CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentRecord(Payment payment) {
         return paymentRepository.createPayment(payment)
-                .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"));
+                .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"))
+                .exceptionally(throwable ->  {
+                    if (throwable instanceof DuplicateKeyException) {
+                        return createFailPaymentResponse("Payment Already Exists", "FAILURE");
+                    }
+                    return createFailPaymentResponse("Error Creating Payment: " + throwable.getMessage(), "FAILURE");
+                });
     }
 
     @Override
     public CompletableFuture<PaymentLifeCycleManagementResponse> updatePayment(String id, String userName, Payment payment) {
         return  paymentRepository.updatePayment(id, payment, userName)
-                    .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS"));
+                    .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS"))
+                .exceptionally(throwable -> createFailPaymentResponse(throwable.getMessage(), "FAILURE"));
     }
 
     @Override
@@ -86,22 +97,17 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     public CompletableFuture<PaymentLifeCycleManagementResponse> getAllPayment() {
         return paymentRepository.getAllPayments()
                 .thenCompose(payments -> {
-                    if (payments.isEmpty()) {
-                        throw new RuntimeException("No Payments Found");
-                    }
-                    return createPaymentSuccesResponse(payments, "", "SUCCESS");
+                    String message = payments.isEmpty() ? "No Payments Found" : null;
+                    return createPaymentSuccesResponse(payments, message, "SUCCESS");
                 });
     }
 
     @Override
     public CompletableFuture<PaymentLifeCycleManagementResponse> getPaymentById(String id) {
         return paymentRepository.getPaymentById(id)
-                .thenCompose(payment -> {
-                    if (payment == null) {
-                        throw new RuntimeException("Payment Not Found");
-                    }
-                    return createPaymentSuccesResponse(List.of(payment), "", "SUCCESS");
-                });
+                .thenCompose(payment ->
+                     createPaymentSuccesResponse(payment == null ? null : List.of(payment), "Payment Fetch Successfully", "SUCCESS")
+                );
     }
 
     private CompletableFuture<ReportResponse> buildReport(CompletableFuture<List<Payment>> paymentsFuture, String reportType) {
@@ -117,8 +123,8 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                             Collectors.collectingAndThen(Collectors.toList(), this::createReportData)
                     ));
 
-            double totalIncoming = reportData.values().stream().mapToDouble(d -> d.inComingPayments).sum();
-            double totalOutgoing = reportData.values().stream().mapToDouble(d -> d.outGoingPayments).sum();
+            double totalIncoming = reportData.values().stream().mapToDouble(data -> data.inComingPayments).sum();
+            double totalOutgoing = reportData.values().stream().mapToDouble(data -> data.outGoingPayments).sum();
 
             return ReportResponse.builder()
                     .reportType(reportType)
@@ -159,14 +165,6 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
             return amount;
         }
 
-        Map<String, Double> exchangeRates = Map.of(
-                "USD", 83.0,
-                "EUR", 90.0,
-                "GBP", 105.0,
-                "JPY", 0.56,
-                "CAD", 61.0
-        );
-
         Double rate = exchangeRates.get(currency.toUpperCase());
         if (rate == null) {
             throw new IllegalArgumentException("Unsupported currency: " + currency);
@@ -187,9 +185,16 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     private CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentSuccesResponse(List<Payment> payments, String message, String status) {
         PaymentLifeCycleManagementResponse response = PaymentLifeCycleManagementResponse.builder()
                 .payments(payments)
-                .message(message)
+                .message(payments == null ? "No Payment Exist for given Payment ID" : message)
                 .status(status)
                 .build();
         return CompletableFuture.completedFuture(response);
+    }
+
+    private PaymentLifeCycleManagementResponse createFailPaymentResponse(String message, String status) {
+       return PaymentLifeCycleManagementResponse.builder()
+                .message(message)
+                .status(status)
+                .build();
     }
 }

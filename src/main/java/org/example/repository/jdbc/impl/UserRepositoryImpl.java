@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.example.repository.jdbc.constants.UserDetailsQueryConstant.EMAIL;
 import static org.example.repository.jdbc.constants.UserDetailsQueryConstant.PASSWORD;
 import static org.example.repository.jdbc.constants.UserDetailsQueryConstant.USER_ID;
 import static org.example.repository.jdbc.constants.UserDetailsQueryConstant.USER_NAME;
@@ -38,6 +39,7 @@ public class UserRepositoryImpl implements UserRepository {
                     .username(rs.getString(USER_NAME))
                     .role(rs.getString(USER_ROLE) != null ? UserRole.valueOf(rs.getString(USER_ROLE)) : null)
                     .password(rs.getString(PASSWORD))
+                    .email(rs.getString(EMAIL))
                     .build();
         }
     };
@@ -80,7 +82,8 @@ public class UserRepositoryImpl implements UserRepository {
                     user.getId(),
                     user.getUsername(),
                     user.getRole() != null ? user.getRole().name() : null,
-                    user.getPassword()
+                    user.getPassword(),
+                    user.getEmail()
             );
             return CompletableFuture.completedFuture(null);
         } catch (DuplicateKeyException e) {
