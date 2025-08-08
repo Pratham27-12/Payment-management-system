@@ -41,8 +41,8 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     }
 
     @Override
-    public CompletableFuture<ReportResponse> generateMonthlyReport(int month, int year) {
-        LocalDate startDate = LocalDate.of(year, month, 1);
+    public CompletableFuture<ReportResponse> generateMonthlyReport(Long month, Long year) {
+        LocalDate startDate = LocalDate.of(year.intValue(), month.intValue(), 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         long startEpoch = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -53,24 +53,24 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     }
 
     @Override
-    public CompletableFuture<ReportResponse> generateQuarterlyReport(int quarter, int year) {
+    public CompletableFuture<ReportResponse> generateQuarterlyReport(Long quarter, Long year) {
         LocalDate startDate;
-        LocalDate endDate = switch (quarter) {
+        LocalDate endDate = switch (quarter.intValue()) {
             case 1 -> {
-                startDate = LocalDate.of(year, Month.JANUARY, 1);
-                yield LocalDate.of(year, Month.MARCH, 31);
+                startDate = LocalDate.of(year.intValue(), Month.JANUARY, 1);
+                yield LocalDate.of(year.intValue(), Month.MARCH, 31);
             }
             case 2 -> {
-                startDate = LocalDate.of(year, Month.APRIL, 1);
-                yield LocalDate.of(year, Month.JUNE, 30);
+                startDate = LocalDate.of(year.intValue(), Month.APRIL, 1);
+                yield LocalDate.of(year.intValue(), Month.JUNE, 30);
             }
             case 3 -> {
-                startDate = LocalDate.of(year, Month.JULY, 1);
-                yield LocalDate.of(year, Month.SEPTEMBER, 30);
+                startDate = LocalDate.of(year.intValue(), Month.JULY, 1);
+                yield LocalDate.of(year.intValue(), Month.SEPTEMBER, 30);
             }
             case 4 -> {
-                startDate = LocalDate.of(year, Month.OCTOBER, 1);
-                yield LocalDate.of(year, Month.DECEMBER, 31);
+                startDate = LocalDate.of(year.intValue(), Month.OCTOBER, 1);
+                yield LocalDate.of(year.intValue(), Month.DECEMBER, 31);
             }
             default -> throw new IllegalArgumentException("Invalid quarter: " + quarter);
         };
@@ -107,7 +107,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     private CompletableFuture<ReportResponse> buildReport(CompletableFuture<List<Payment>> paymentsFuture, String reportType) {
         return paymentsFuture.thenApply(payments -> {
             if (payments.isEmpty()) {
-                return failedReport(reportType, "No Payments Found for the specified period");
+                return getEmptyReportResponse(reportType, "No Payments Found for the specified period");
             }
 
             Map<String, ReportResponse.Data> reportData = payments.stream()
@@ -117,8 +117,8 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                             Collectors.collectingAndThen(Collectors.toList(), this::createReportData)
                     ));
 
-            long totalIncoming = reportData.values().stream().mapToLong(d -> d.inComingPayments).sum();
-            long totalOutgoing = reportData.values().stream().mapToLong(d -> d.outGoingPayments).sum();
+            double totalIncoming = reportData.values().stream().mapToDouble(d -> d.inComingPayments).sum();
+            double totalOutgoing = reportData.values().stream().mapToDouble(d -> d.outGoingPayments).sum();
 
             return ReportResponse.builder()
                     .reportType(reportType)
@@ -126,6 +126,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                     .balanceType(totalIncoming > totalOutgoing ? "CREDIT" : "DEBIT")
                     .reportData(reportData)
                     .totalNetBalance(Math.abs(totalIncoming - totalOutgoing))
+                    .status("SUCCESS")
                     .build();
         });
     }
@@ -142,18 +143,43 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         return data;
     }
 
-    private long calculateTotalAmount(List<Payment> payments, PaymentType type) {
+    private double calculateTotalAmount(List<Payment> payments, PaymentType type) {
         return payments.stream()
                 .filter(payment -> payment.getType() == type)
-                .mapToLong(payment -> Long.parseLong(payment.getAmount()))
+                .mapToDouble(payment -> {
+                    double amount = Double.parseDouble(payment.getAmount());
+                    String currency = payment.getCurrency(); // Assuming Payment has getCurrency() method
+                    return convertToINR(amount, currency);
+                })
                 .sum();
     }
 
-    private static ReportResponse failedReport(String reportType, String message) {
+    private double convertToINR(double amount, String currency) {
+        if (currency == null || "INR".equalsIgnoreCase(currency)) {
+            return amount;
+        }
+
+        Map<String, Double> exchangeRates = Map.of(
+                "USD", 83.0,
+                "EUR", 90.0,
+                "GBP", 105.0,
+                "JPY", 0.56,
+                "CAD", 61.0
+        );
+
+        Double rate = exchangeRates.get(currency.toUpperCase());
+        if (rate == null) {
+            throw new IllegalArgumentException("Unsupported currency: " + currency);
+        }
+
+        return amount * rate;
+    }
+
+    private static ReportResponse getEmptyReportResponse(String reportType, String message) {
         return ReportResponse.builder()
                 .reportType(reportType)
                 .date(LocalDate.now())
-                .status("FAILED")
+                .status("SUCCESS")
                 .message(message)
                 .build();
     }

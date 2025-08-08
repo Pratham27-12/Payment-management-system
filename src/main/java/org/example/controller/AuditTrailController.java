@@ -25,7 +25,7 @@ public class AuditTrailController {
 
     private final AuditTrailManagementService auditTrailManagementService;
 
-    public AuditTrailController(AuditTrailManagementServiceImpl auditTrailManagementServiceImpl){
+    public AuditTrailController(AuditTrailManagementServiceImpl auditTrailManagementServiceImpl) {
         this.auditTrailManagementService = auditTrailManagementServiceImpl;
     }
 
@@ -43,5 +43,5 @@ public class AuditTrailController {
             @PathVariable("startDate") String startDate, @PathVariable("endDate") String endDate) {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(
                 auditTrailManagementService.getAuditTrailByCreatedAtRange(startDate, endDate));
-        }
+    }
 }

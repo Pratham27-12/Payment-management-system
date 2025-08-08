@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,7 +40,7 @@ public class UserController {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user.getUsername(), user.getPassword()));
     }
 
-    @PostMapping(UPDATE_USER_ROLE)
+    @PutMapping(UPDATE_USER_ROLE)
     @PreAuthorize("hasRole('ADMIN')")
     public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> updateUserRole(@RequestBody User user) {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(
@@ -48,12 +49,12 @@ public class UserController {
 
     @GetMapping(GET_ALL)
     @PreAuthorize("hasRole('ADMIN')")
-    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> getAllUser(@RequestBody User user) {
+    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> getAllUser() {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(
                 userManagementService.getAllUsers());
     }
 
-    @PostMapping(UPDATE_USER_PASSWORD)
+    @PutMapping(UPDATE_USER_PASSWORD)
     public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> updateUserPassword(
             @PathVariable("userName") String userName,
             @RequestBody PasswordChangeRequest passwordChangeRequest) {

@@ -9,8 +9,8 @@ import java.util.concurrent.CompletableFuture;
 public interface PaymentManagementService {
     CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentRecord(Payment payment);
     CompletableFuture<PaymentLifeCycleManagementResponse> updatePayment(String id, String userName, Payment payment);
-    CompletableFuture<ReportResponse> generateMonthlyReport(int month, int year);
-    CompletableFuture<ReportResponse> generateQuarterlyReport(int quarter, int year);
+    CompletableFuture<ReportResponse> generateMonthlyReport(Long month, Long year);
+    CompletableFuture<ReportResponse> generateQuarterlyReport(Long quarter, Long year);
     CompletableFuture<PaymentLifeCycleManagementResponse> getAllPayment();
     CompletableFuture<PaymentLifeCycleManagementResponse> getPaymentById(String id);
 }

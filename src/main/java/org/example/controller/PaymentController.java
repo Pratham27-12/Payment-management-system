@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import org.example.model.response.PaymentLifeCycleManagementResponse;
+import org.example.model.response.ReportResponse;
 import org.example.repository.jdbc.dao.Payment;
 import org.example.service.PaymentManagementService;
 import org.example.service.impl.PaymentManagementServiceImpl;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,8 +19,11 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import static org.example.model.route.PaymentRoute.CREATE;
 import static org.example.model.route.PaymentRoute.GET_ALL;
+import static org.example.model.route.PaymentRoute.MONTHLY;
 import static org.example.model.route.PaymentRoute.PAYMENTS_BASE_URL;
 import static org.example.model.route.PaymentRoute.ID;
+import static org.example.model.route.PaymentRoute.QUARTERLY;
+import static org.example.model.route.PaymentRoute.REPORTS;
 import static org.example.model.route.PaymentRoute.UPDATE;
 
 @RestController
@@ -40,7 +45,7 @@ public class PaymentController {
 
     @GetMapping(GET_ALL)
     @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
-    public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> getAllPayment() {
+    public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> getAllPayments() {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(paymentManagementService.getAllPayment());
     }
 
@@ -52,12 +57,32 @@ public class PaymentController {
                 paymentManagementService.createPaymentRecord(payment));
     }
 
-    @PostMapping(UPDATE + ID)
+    @PutMapping(UPDATE + ID)
     @PreAuthorize("hasRole('FINANCE_MANAGER')")
     public DeferredResult<ResponseEntity<PaymentLifeCycleManagementResponse>> updatePaymentRecord(
             @PathVariable("id") String id,
             @RequestBody Payment payment) {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(
                 paymentManagementService.updatePayment(id, payment.getUserName(), payment));
+    }
+
+    @GetMapping(REPORTS + MONTHLY)
+    @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
+    public DeferredResult<ResponseEntity<ReportResponse>> getMonthlyReport(
+            @PathVariable("month") Long month,
+            @PathVariable("year") Long year
+    ) {
+        return DeferredResultUtil.getDeferredResultWithResponseEntity(
+                paymentManagementService.generateMonthlyReport(month, year));
+    }
+
+    @GetMapping(REPORTS + QUARTERLY)
+    @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
+    public DeferredResult<ResponseEntity<ReportResponse>> getQuarterLyReport(
+            @PathVariable("quarter") Long quarter,
+            @PathVariable("year") Long year
+    ) {
+        return DeferredResultUtil.getDeferredResultWithResponseEntity(
+                paymentManagementService.generateQuarterlyReport(quarter, year));
     }
 }

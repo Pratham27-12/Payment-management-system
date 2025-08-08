@@ -15,13 +15,13 @@ public class ReportResponse {
     private LocalDate date;
     private Map<String, Data> reportData;
     private String balanceType;
-    private Long totalNetBalance;
+    private Double totalNetBalance;
     private String status;
     private String message;
 
     public static class Data {
-        public Long inComingPayments;
-        public Long outGoingPayments;
-        public Long netBalance;
+        public Double inComingPayments;
+        public Double outGoingPayments;
+        public Double netBalance;
     }
 }

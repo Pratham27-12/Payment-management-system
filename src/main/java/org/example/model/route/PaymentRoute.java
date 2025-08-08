@@ -15,5 +15,8 @@ public class PaymentRoute {
     public static final String END_DATE = "/end-date/{endDate}";
     public static final String UPDATE_USER_ROLE = "/role";
     public static final String UPDATE_USER_PASSWORD = USER_NAME + "/password";
-
+    public static final String YEAR = "/year/{year}";
+    public static final String REPORTS = "/reports";
+    public static final String MONTHLY = "/monthly/{month}" + YEAR;
+    public static final String QUARTERLY = "/quarterly/{quarter}" + YEAR;
 }
