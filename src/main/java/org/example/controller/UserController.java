@@ -18,15 +18,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import static org.example.model.route.PaymentRoute.API;
 import static org.example.model.route.PaymentRoute.CREATE;
 import static org.example.model.route.PaymentRoute.GET_ALL;
 import static org.example.model.route.PaymentRoute.UPDATE_USER_PASSWORD;
 import static org.example.model.route.PaymentRoute.UPDATE_USER_ROLE;
-import static org.example.model.route.PaymentRoute.USERS_BASE_URL;
-import static org.example.model.route.PaymentRoute.USER_NAME;
+import static org.example.model.route.PaymentRoute.USERS;
+import static org.example.model.route.PaymentRoute.V1;
 
 @RestController
-@RequestMapping(USERS_BASE_URL)
+@RequestMapping(API + V1)
 public class UserController {
 
     private final UserManagementService userManagementService;
@@ -35,7 +36,7 @@ public class UserController {
         this.userManagementService = userManagementServiceImpl;
     }
 
-    @PostMapping(CREATE)
+    @PostMapping(USERS)
     public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> createUser(@RequestBody LoginRequest user) {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user.getUsername(), user.getPassword()));
     }
@@ -47,7 +48,7 @@ public class UserController {
                 userManagementService.updateUserRole(user.getUsername(), user.getRole().name()));
     }
 
-    @GetMapping(GET_ALL)
+    @GetMapping(USERS)
     @PreAuthorize("hasRole('ADMIN')")
     public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> getAllUser() {
         return DeferredResultUtil.getDeferredResultWithResponseEntity(

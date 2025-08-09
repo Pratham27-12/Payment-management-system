@@ -3,8 +3,8 @@ package org.example.model.route;
 public class PaymentRoute {
     public static final String V1 = "/v1";
     public static final String API = "/api";
-    public static final String PAYMENTS_BASE_URL = API + V1 + "/payments";
-    public static final String USERS_BASE_URL = API + V1 +  "/users";
+    public static final String PAYMENTS = "/payments";
+    public static final String USERS = "/users";
     public static final String AUDIT_TRAIL_BASE_URL = API + V1 +  "/audit-trail";
     public static final String ID = "/{id}";
     public static final String USER_NAME = "/{userName}";
