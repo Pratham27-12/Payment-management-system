@@ -6,7 +6,7 @@ public class PaymentDetailsQueryConstant {
     public static final String CURRENCY = "currency";
     public static final String TYPE = "payment_type";
     public static final String CATEGORY = "category";
-    public static final String USER_NAME = "user_name";
+    public static final String CREATED_BY = "created_by";
     public static final String ACCOUNT_NAME = "account_name";
     public static final String STATUS = "status";
     public static final String CREATED_AT = "created_at";
@@ -16,12 +16,12 @@ public class PaymentDetailsQueryConstant {
 
     public static String createPaymentDetailsQuery() {
         return String.format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES (?, ?, ?, ?, ?, ?::payment_type, ?::payment_category, ?::payment_status)",
-                TABLE, PAYMENT_ID, USER_NAME, ACCOUNT_NAME, AMOUNT, CURRENCY, TYPE, CATEGORY, STATUS);
+                TABLE, PAYMENT_ID, CREATED_BY, ACCOUNT_NAME, AMOUNT, CURRENCY, TYPE, CATEGORY, STATUS);
     }
 
     public static String updatePaymentDetailsById() {
         return String.format("UPDATE %s SET %s = ?::payment_status, %s = ? WHERE %s = ?", TABLE,
-                STATUS, USER_NAME, PAYMENT_ID);
+                STATUS, CREATED_BY, PAYMENT_ID);
     }
 
     public static String getPaymentDetailsById() {

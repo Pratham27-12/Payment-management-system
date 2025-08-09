@@ -21,13 +21,13 @@ import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.AMOUNT;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CATEGORY;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CREATED_AT;
+import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CREATED_BY;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.CURRENCY;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.PAYMENT_ID;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.STATUS;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.TABLE;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.TYPE;
 import static org.example.repository.jdbc.constants.PaymentDetailsQueryConstant.UPDATED_AT;
-import static org.example.repository.jdbc.constants.UserDetailsQueryConstant.USER_NAME;
 
 @Component
 public class PaymentRepositoryImpl implements PaymentRepository {
@@ -43,7 +43,7 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         public Payment mapRow(ResultSet rs, int rowNum) throws SQLException {
             return Payment.builder()
                     .id(rs.getString(PAYMENT_ID))
-                    .userName(rs.getString(USER_NAME))
+                    .userName(rs.getString(CREATED_BY))
                     .amount(rs.getString(AMOUNT))
                     .accountName(rs.getString(ACCOUNT_NAME))
                     .category(rs.getString(CATEGORY) != null ? PaymentCategory.valueOf(rs.getString(CATEGORY)) : null)
@@ -133,7 +133,7 @@ public class PaymentRepositoryImpl implements PaymentRepository {
             }
 
             if (paymentUpdates.getCategory() != null) {
-                setClauses.add(String.format("%s = ?", USER_NAME));
+                setClauses.add(String.format("%s = ?", CREATED_BY));
                 parameters.add(userName);
             }
 

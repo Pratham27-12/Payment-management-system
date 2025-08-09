@@ -6,8 +6,6 @@ import org.example.model.enums.PaymentType;
 import org.example.repository.AuditTrailRepository;
 import org.example.repository.jdbc.constants.AuditTrailQueryConstant;
 import org.example.repository.jdbc.dao.AuditTrail;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -25,7 +23,7 @@ import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.PAYM
 import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.STATUS;
 import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.TYPE;
 import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.UPDATED_AT;
-import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.USER_NAME;
+import static org.example.repository.jdbc.constants.AuditTrailQueryConstant.CREATED_BY;
 
 @Component
 public class AuditTrailRepositoryImpl implements AuditTrailRepository {
@@ -45,7 +43,7 @@ public class AuditTrailRepositoryImpl implements AuditTrailRepository {
                     .category(PaymentCategory.valueOf(rs.getString(CATEGORY)))
                     .type(PaymentType.valueOf(rs.getString(TYPE)))
                     .status(PaymentStatus.valueOf(rs.getString(STATUS)))
-                    .userName(rs.getString(USER_NAME))
+                    .userName(rs.getString(CREATED_BY))
                     .createdAt(rs.getLong(CREATED_AT))
                     .updatedAt(rs.getLong(UPDATED_AT))
                     .currency(rs.getString(CURRENCY))

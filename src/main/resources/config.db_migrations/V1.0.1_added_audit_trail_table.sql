@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS payment_system.audit_trail (
     currency varchar(3) NOT null,
     payment_type payment_type NOT NULL,
     category payment_category NOT NULL,
-    user_name varchar(30) NOT NULL,
+    created_by varchar(30) NOT NULL,
     account_name varchar(30) NOT NULL,
     status  payment_status NOT NULL,
     created_at bigint NOT NULL DEFAULT (EXTRACT(epoch FROM now()) * 1000::numeric),

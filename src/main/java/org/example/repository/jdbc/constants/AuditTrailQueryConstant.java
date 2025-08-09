@@ -7,7 +7,7 @@ public class AuditTrailQueryConstant {
     public static final String TYPE = "payment_type";
     public static final String CATEGORY = "category";
     public static final String STATUS = "status";
-    public static final String USER_NAME = "user_name";
+    public static final String CREATED_BY = "created_by";
     public static final String CREATED_AT = "created_at";
     public static final String UPDATED_AT = "updated_at";
     public static final String TABLE = "payment_system.audit_trail";
