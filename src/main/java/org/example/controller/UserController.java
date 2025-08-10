@@ -2,6 +2,7 @@ package org.example.controller;
 
 import org.example.model.request.LoginRequest;
 import org.example.model.request.PasswordChangeRequest;
+import org.example.model.request.SignUp;
 import org.example.model.response.UserLifeCycleManagementResponse;
 import org.example.repository.jdbc.dao.User;
 import org.example.service.UserManagementService;
@@ -19,8 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import static org.example.model.route.PaymentRoute.API;
-import static org.example.model.route.PaymentRoute.CREATE;
-import static org.example.model.route.PaymentRoute.GET_ALL;
 import static org.example.model.route.PaymentRoute.UPDATE_USER_PASSWORD;
 import static org.example.model.route.PaymentRoute.UPDATE_USER_ROLE;
 import static org.example.model.route.PaymentRoute.USERS;
@@ -37,8 +36,8 @@ public class UserController {
     }
 
     @PostMapping(USERS)
-    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> createUser(@RequestBody LoginRequest user) {
-        return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user.getUsername(), user.getPassword()));
+    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> createUser(@RequestBody SignUp user) {
+        return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user.getUsername(), user.getPassword(), user.getEmail()));
     }
 
     @PutMapping(UPDATE_USER_ROLE)
