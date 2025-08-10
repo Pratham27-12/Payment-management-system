@@ -26,10 +26,10 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
     }
 
     @Override
-    public CompletableFuture<UserLifeCycleManagementResponse> createUser(String userName, String password) {
+    public CompletableFuture<UserLifeCycleManagementResponse> createUser(String userName, String password, String email) {
         String userId = UUID.randomUUID().toString();
         String hashedPassword = hashPassword(password);
-        User user = User.builder().id(userId).username(userName).password(hashedPassword).role(UserRole.VIEWER).build();
+        User user = User.builder().id(userId).username(userName).password(hashedPassword).email(email).role(UserRole.VIEWER).build();
         return userRepository.getUserByUserName(userName).thenCompose(existingUser -> {
             if (existingUser != null) {
                 return createUserResponse("User already exists", "FAILURE");
