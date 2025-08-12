@@ -1,15 +1,28 @@
 package org.example.repository;
 
 import org.example.model.enums.UserRole;
-import org.example.repository.jdbc.dao.User;
+import org.example.model.dto.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
 
-public interface UserRepository {
-    CompletableFuture<List<User>> getAllUsers();
-    CompletableFuture<User> getUserByUserName(String userName);
-    CompletableFuture<Void> createUser(User user);
-    CompletableFuture<Void> updateUserRole(String userName, UserRole role);
-    CompletableFuture<Void> updateUserPassword(String userName, String password);
+@Repository
+public interface UserRepository extends JpaRepository<User, String> {
+    @Query("SELECT u FROM User u WHERE u.userName = :userName")
+    Optional<User> getUserByUserName(@Param("userName")String userName);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.role = :role WHERE u.userName = :userName")
+    int updateUserRole(@Param("userName") String userName, @Param("role") UserRole role);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.password = :password WHERE u.userName = :userName")
+    int updateUserPassword(@Param("userName") String userName, @Param("password") String password);
 }

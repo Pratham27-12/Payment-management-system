@@ -13,7 +13,7 @@ public class PaymentRoute {
     public static final String GET_ALL = "/get-all";
     public static final String START_DATE = "/start-date/{startDate}";
     public static final String END_DATE = "/end-date/{endDate}";
-    public static final String UPDATE_USER_ROLE = "/role";
+    public static final String UPDATE_USER_ROLE = "{userName}/role";
     public static final String UPDATE_USER_PASSWORD = USER_NAME + "/password";
     public static final String YEAR = "/year/{year}";
     public static final String REPORTS = "/reports";

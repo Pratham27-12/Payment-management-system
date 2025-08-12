@@ -17,14 +17,17 @@ import java.util.function.Consumer;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeferredResultUtil {
 
-    public static <T> DeferredResult<ResponseEntity<T>> getDeferredResultWithResponseEntity(CompletableFuture<T> future) {
+    public static <T> DeferredResult<ResponseEntity<T>> getDeferredResultWithResponseEntity(T value) {
         DeferredResult<ResponseEntity<T>> deferredResult = new DeferredResult<>(600000l);
-        future.thenApply(res -> ResponseEntity
-                        .status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(res))
-                .thenAccept(deferredResult::setResult)
-                .whenComplete(thenOnException(deferredResult::setErrorResult));
+        try {
+            ResponseEntity<T> response = ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(value);
+            deferredResult.setResult(response);
+        } catch (Exception e) {
+            deferredResult.setErrorResult(getUnwrappedException(e));
+        }
         return deferredResult;
     }
 

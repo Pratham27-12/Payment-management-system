@@ -4,20 +4,19 @@ import org.example.model.response.ReportResponse;
 import org.example.model.response.PaymentLifeCycleManagementResponse;
 import org.example.model.enums.PaymentType;
 import org.example.repository.PaymentRepository;
-import org.example.repository.jdbc.dao.Payment;
-import org.example.repository.jdbc.impl.PaymentRepositoryImpl;
+import org.example.repository.UserRepository;
+import org.example.model.dto.Payment;
 import org.example.service.PaymentManagementService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
@@ -25,46 +24,54 @@ import static org.example.util.DateUtil.convertEpochToDateAndReturnMonth;
 
 @Service
 public class PaymentManagementServiceImpl implements PaymentManagementService {
-    private final PaymentRepository paymentRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
     private final Map<String, Double> exchangeRates;
-    public PaymentManagementServiceImpl(PaymentRepositoryImpl paymentRepositoryImpl, @Value("#{${currency.to.inr.map:{T(java.util.Collections).emptyMap()}}}") Map<String, Double> exchangeRates) {
-        this.paymentRepository = paymentRepositoryImpl;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    public PaymentManagementServiceImpl(@Value("#{${currency.to.inr.map:{T(java.util.Collections).emptyMap()}}}") Map<String, Double> exchangeRates) {
         this.exchangeRates = exchangeRates;
     }
 
     @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentRecord(Payment payment) {
-        return paymentRepository.createPayment(payment)
-                .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS"))
-                .exceptionally(throwable ->  {
-                    if (throwable instanceof DuplicateKeyException) {
-                        return createFailPaymentResponse("Payment Already Exists", "FAILURE");
-                    }
-                    return createFailPaymentResponse("Error Creating Payment: " + throwable.getMessage(), "FAILURE");
-                });
+    public PaymentLifeCycleManagementResponse createPaymentRecord(Payment payment) {
+        try {
+            paymentRepository.saveAndFlush(payment);
+            return createPaymentSuccesResponse(List.of(), "Payment Created Successfully", "SUCCESS");
+        } catch (Exception e) {
+            return createFailPaymentResponse("Error Creating Payment: " + e.getMessage(), "FAILURE");
+        }
     }
 
     @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> updatePayment(String id, String userName, Payment payment) {
-        return  paymentRepository.updatePayment(id, payment, userName)
-                    .thenCompose(aVoid -> createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS"))
-                .exceptionally(throwable -> createFailPaymentResponse(throwable.getMessage(), "FAILURE"));
+    public PaymentLifeCycleManagementResponse updatePayment(String id, String updatedBy, Payment payment) {
+        try {
+            payment.setCreatedBy(updatedBy);
+            paymentRepository.save(payment);
+            return createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS");
+        } catch (Exception e) {
+            return createFailPaymentResponse("Error updating payment: " + e.getMessage(), "FAILURE");
+        }
     }
 
     @Override
-    public CompletableFuture<ReportResponse> generateMonthlyReport(Long month, Long year) {
+    public ReportResponse generateMonthlyReport(Long month, Long year) {
         LocalDate startDate = LocalDate.of(year.intValue(), month.intValue(), 1);
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         long startEpoch = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long endEpoch = endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        CompletableFuture<List<Payment>> payments = paymentRepository.findPaymentsBetween(startEpoch, endEpoch);
+        List<Payment> payments = paymentRepository.findPaymentsBetween(startEpoch, endEpoch);
         return buildReport(payments, "MONTHLY");
     }
 
     @Override
-    public CompletableFuture<ReportResponse> generateQuarterlyReport(Long quarter, Long year) {
+    public ReportResponse generateQuarterlyReport(Long quarter, Long year) {
         LocalDate startDate;
         LocalDate endDate = switch (quarter.intValue()) {
             case 1 -> {
@@ -89,29 +96,24 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         long startEpoch = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long endEpoch = endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        CompletableFuture<List<Payment>> payments = paymentRepository.findPaymentsBetween(startEpoch, endEpoch);
+        List<Payment> payments = paymentRepository.findPaymentsBetween(startEpoch, endEpoch);
         return buildReport(payments, "QUARTERLY");
     }
 
     @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> getAllPayment() {
-        return paymentRepository.getAllPayments()
-                .thenCompose(payments -> {
-                    String message = payments.isEmpty() ? "No Payments Found" : null;
-                    return createPaymentSuccesResponse(payments, message, "SUCCESS");
-                });
+    public PaymentLifeCycleManagementResponse getAllPayment() {
+        List<Payment> payments =  paymentRepository.findAll();
+        String message = payments.isEmpty() ? "No Payments Found" : null;
+        return createPaymentSuccesResponse(payments, message, "SUCCESS");
     }
 
     @Override
-    public CompletableFuture<PaymentLifeCycleManagementResponse> getPaymentById(String id) {
-        return paymentRepository.getPaymentById(id)
-                .thenCompose(payment ->
-                     createPaymentSuccesResponse(payment == null ? null : List.of(payment), "Payment Fetch Successfully", "SUCCESS")
-                );
+    public PaymentLifeCycleManagementResponse getPaymentById(String id) {
+        Optional<Payment> payment = paymentRepository.findById(id);
+        return createPaymentSuccesResponse(payment.map(List::of).orElse(null), "Payment Fetch Successfully", "SUCCESS");
     }
 
-    private CompletableFuture<ReportResponse> buildReport(CompletableFuture<List<Payment>> paymentsFuture, String reportType) {
-        return paymentsFuture.thenApply(payments -> {
+    private ReportResponse buildReport(List<Payment> payments, String reportType) {
             if (payments.isEmpty()) {
                 return getEmptyReportResponse(reportType, "No Payments Found for the specified period");
             }
@@ -134,7 +136,6 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                     .totalNetBalance(Math.abs(totalIncoming - totalOutgoing))
                     .status("SUCCESS")
                     .build();
-        });
     }
 
     private String getPaymentMonth(Payment payment) {
@@ -182,13 +183,13 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                 .build();
     }
 
-    private CompletableFuture<PaymentLifeCycleManagementResponse> createPaymentSuccesResponse(List<Payment> payments, String message, String status) {
+    private PaymentLifeCycleManagementResponse createPaymentSuccesResponse(List<Payment> payments, String message, String status) {
         PaymentLifeCycleManagementResponse response = PaymentLifeCycleManagementResponse.builder()
                 .payments(payments)
                 .message(payments == null ? "No Payment Exist for given Payment ID" : message)
                 .status(status)
                 .build();
-        return CompletableFuture.completedFuture(response);
+        return response;
     }
 
     private PaymentLifeCycleManagementResponse createFailPaymentResponse(String message, String status) {

@@ -3,7 +3,7 @@ package org.example.model.response;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.repository.jdbc.dao.Payment;
+import org.example.model.dto.Payment;
 
 import java.util.List;
 

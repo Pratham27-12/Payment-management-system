@@ -1,10 +1,8 @@
 package org.example.controller;
 
-import org.example.model.request.LoginRequest;
+import org.example.model.dto.User;
 import org.example.model.request.PasswordChangeRequest;
-import org.example.model.request.SignUp;
 import org.example.model.response.UserLifeCycleManagementResponse;
-import org.example.repository.jdbc.dao.User;
 import org.example.service.UserManagementService;
 import org.example.service.impl.UserManagementServiceImpl;
 import org.example.util.DeferredResultUtil;
@@ -21,7 +19,6 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import static org.example.model.route.PaymentRoute.API;
 import static org.example.model.route.PaymentRoute.UPDATE_USER_PASSWORD;
-import static org.example.model.route.PaymentRoute.UPDATE_USER_ROLE;
 import static org.example.model.route.PaymentRoute.USERS;
 import static org.example.model.route.PaymentRoute.V1;
 
@@ -36,15 +33,8 @@ public class UserController {
     }
 
     @PostMapping(USERS)
-    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> createUser(@RequestBody SignUp user) {
-        return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user.getUsername(), user.getPassword(), user.getEmail()));
-    }
-
-    @PutMapping(UPDATE_USER_ROLE)
-    @PreAuthorize("hasRole('ADMIN')")
-    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> updateUserRole(@RequestBody User user) {
-        return DeferredResultUtil.getDeferredResultWithResponseEntity(
-                userManagementService.updateUserRole(user.getUsername(), user.getRole().name()));
+    public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> createUser(@RequestBody User user) {
+        return DeferredResultUtil.getDeferredResultWithResponseEntity(userManagementService.createUser(user));
     }
 
     @GetMapping(USERS)
@@ -54,7 +44,7 @@ public class UserController {
                 userManagementService.getAllUsers());
     }
 
-    @PutMapping(UPDATE_USER_PASSWORD)
+    @PutMapping(USERS + UPDATE_USER_PASSWORD)
     public DeferredResult<ResponseEntity<UserLifeCycleManagementResponse>> updateUserPassword(
             @PathVariable("userName") String userName,
             @RequestBody PasswordChangeRequest passwordChangeRequest) {

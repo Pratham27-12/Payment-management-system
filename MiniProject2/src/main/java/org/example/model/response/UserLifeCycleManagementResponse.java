@@ -4,7 +4,7 @@ package org.example.model.response;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.repository.jdbc.dao.User;
+import org.example.model.dto.User;
 
 import java.util.List;
 
