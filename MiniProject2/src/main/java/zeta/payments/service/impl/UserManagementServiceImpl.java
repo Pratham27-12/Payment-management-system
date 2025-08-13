@@ -35,7 +35,7 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
                 throw new PaymentManagementException(409, "User already exists with username: " + user.getUsername(), "FAILURE");
 
             userRepository.save(user);
-            return createUserResponse("User Created Successfully", "SUCCESS");
+            return createUserResponse("User Created Successfully",List.of(user), "SUCCESS");
 
         } catch (PaymentManagementException e) {
            throw new PaymentManagementException(e.getHttpStatus(), e.getMessage(), e.getStatus());
@@ -50,7 +50,7 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
         try {
             int updated = userRepository.updateUserRole(userToUpdate, role);
             if (updated == 1) {
-                return createUserResponse("User Role Updated Successfully", "SUCCESS");
+                return UserLifeCycleManagementResponse.builder().message("User Role Updated Successfully").status("SUCCESS").build();
             }
             throw new PaymentManagementException(404, "User not found or role update failed", "FAILURE");
         } catch (PaymentManagementException e) {
@@ -64,7 +64,7 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
     public UserLifeCycleManagementResponse getAllUsers() {
         try {
             List<User> users = userRepository.findAll();
-            return UserLifeCycleManagementResponse.builder().status("SUCCESS").users(users).build();
+            return createUserResponse("Users fetched successfully", users, "SUCCESS");
         } catch (Exception e) {
             throw new PaymentManagementException(500, "An error occurred while fetching users", "FAILURE");
         }
@@ -74,18 +74,18 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
     public UserLifeCycleManagementResponse updateUserPassword(String userName, String oldPassword, String newPassword) {
         Optional<User> userOpt = userRepository.getUserByUserName(userName);
         if (!userOpt.isPresent()) {
-            return createUserResponse("User not found", "FAILURE");
+            throw new PaymentManagementException(404, "User not found with username: " + userName, "FAILURE");
         }
         User user = userOpt.get();
         if (!checkPassword(oldPassword, user.getPassword())) {
-            return createUserResponse("Old password is incorrect", "FAILURE");
+            throw new PaymentManagementException(400, "Password is incorrect", "FAILURE");
         }
         String hashedNewPassword = hashPassword(newPassword);
         int updated = userRepository.updateUserPassword(userName, hashedNewPassword);
         if (updated == 1) {
-            return createUserResponse("Password updated successfully", "SUCCESS");
+            return createUserResponse("Password updated successfully",List.of(user), "SUCCESS");
         } else {
-            return createUserResponse("Failed to update password", "FAILURE");
+            throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
 
@@ -95,9 +95,10 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
-    private UserLifeCycleManagementResponse createUserResponse(String message, String status) {
+    private UserLifeCycleManagementResponse createUserResponse(String message,List<User> users, String status) {
         return UserLifeCycleManagementResponse.builder()
                 .message(message)
+                .users(users)
                 .status(status)
                 .build();
     }

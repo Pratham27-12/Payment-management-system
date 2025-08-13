@@ -1,40 +1,32 @@
 package zeta.payments.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import zeta.payments.commons.enums.PaymentCategory;
 import zeta.payments.commons.enums.PaymentStatus;
 import zeta.payments.commons.enums.PaymentType;
 
+import java.io.Serializable;
 
 @Entity
-@Table(name = "payment_details", schema = "payment_system")
+@Table(name = "audit_trail", schema = "payment_system")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "user")
-@EqualsAndHashCode(exclude = "user")
-public class Payment {
+public class Audit {
+    @EmbeddedId
+    private AuditId id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "payment_id")
-    private Long id;
+    @Column(name = "revision_type")
+    private String revisionType;
 
     @Column(name = "amount")
     private String amount;
@@ -66,8 +58,15 @@ public class Payment {
     @Column(name = "updated_at", updatable = false, insertable = false)
     private Long updatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true)
-    @JsonBackReference
-    private User user;
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    static class AuditId implements Serializable {
+        @Column(name = "payment_id")
+        private Long paymentId;
+
+        @Column(name = "revision_count")
+        private Long revisionCount;
+    }
 }
