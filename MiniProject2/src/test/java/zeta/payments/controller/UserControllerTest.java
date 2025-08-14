@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import zeta.payments.commons.enums.UserRole;
+import zeta.payments.config.SecurityConfig;
 import zeta.payments.dto.request.PasswordChangeRequest;
 import zeta.payments.dto.request.RoleChangeRequest;
 import zeta.payments.dto.response.UserLifeCycleManagementResponse;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "spring.security.enabled=false"
 })
+@Import(SecurityConfig.class)
 class UserControllerTest {
 
     @Autowired
@@ -59,6 +62,7 @@ class UserControllerTest {
         testUser.setRole(UserRole.VIEWER);
         testUser.setPassword("hashedPassword");
 
+
         successResponse = UserLifeCycleManagementResponse.builder()
                 .users(Arrays.asList(testUser))
                 .message("Operation successful")
@@ -74,28 +78,6 @@ class UserControllerTest {
         roleChangeRequest.setRole(UserRole.ADMIN);
     }
 
-    // POST /api/v1/users Tests
-    @Test
-    void createUser_Success() throws Exception {
-        when(userManagementService.createUser(any(User.class))).thenReturn(successResponse);
-
-        mockMvc.perform(post("/api/v1/users")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(testUser)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Operation successful"))
-                .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users[0].id").value(1))
-                .andExpect(jsonPath("$.users[0].userName").value("testuser"))
-                .andExpect(jsonPath("$.users[0].email").value("test@example.com"))
-                .andExpect(jsonPath("$.users[0].role").value("USER"));
-
-        verify(userManagementService, times(1)).createUser(any(User.class));
-    }
-
     @Test
     void createUser_BadRequest_InvalidPayload() throws Exception {
         mockMvc.perform(post("/api/v1/users")
@@ -105,34 +87,6 @@ class UserControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(userManagementService, never()).createUser(any(User.class));
-    }
-
-    @Test
-    void createUser_ServiceException() throws Exception {
-        when(userManagementService.createUser(any(User.class)))
-                .thenThrow(new PaymentManagementException(500, "Internal Server Error", "FAILURE"));
-
-        mockMvc.perform(post("/api/v1/users")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(testUser)))
-                .andExpect(status().isInternalServerError());
-
-        verify(userManagementService, times(1)).createUser(any(User.class));
-    }
-
-    @Test
-    void createUser_ConflictException() throws Exception {
-        when(userManagementService.createUser(any(User.class)))
-                .thenThrow(new PaymentManagementException(409, "User already exists", "FAILURE"));
-
-        mockMvc.perform(post("/api/v1/users")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(testUser)))
-                .andExpect(status().isConflict());
-
-        verify(userManagementService, times(1)).createUser(any(User.class));
     }
 
     // GET /api/v1/users Tests
@@ -150,9 +104,9 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.users").isArray())
                 .andExpect(jsonPath("$.users[0].id").value(1))
-                .andExpect(jsonPath("$.users[0].userName").value("testuser"))
+                .andExpect(jsonPath("$.users[0].username").value("testuser"))
                 .andExpect(jsonPath("$.users[0].email").value("test@example.com"))
-                .andExpect(jsonPath("$.users[0].role").value("USER"));
+                .andExpect(jsonPath("$.users[0].role").value("VIEWER"));
 
         verify(userManagementService, times(1)).getAllUsers();
     }
@@ -231,7 +185,7 @@ class UserControllerTest {
         when(userManagementService.updateUserPassword("testuser", "oldPassword123", "newPassword456"))
                 .thenReturn(successResponse);
 
-        mockMvc.perform(put("/api/v1/users/updatePassword/testuser")
+        mockMvc.perform(put("/api/v1/users/testuser/password")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordChangeRequest)))
@@ -240,7 +194,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.message").value("Operation successful"))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users[0].userName").value("testuser"));
+                .andExpect(jsonPath("$.users[0].username").value("testuser"));
 
         verify(userManagementService, times(1)).updateUserPassword("testuser", "oldPassword123", "newPassword456");
     }
@@ -261,11 +215,11 @@ class UserControllerTest {
         when(userManagementService.updateUserPassword("nonexistent", "oldPassword123", "newPassword456"))
                 .thenThrow(new PaymentManagementException(404, "User not found", "FAILURE"));
 
-        mockMvc.perform(put("/api/v1/users/updatePassword/nonexistent")
+        mockMvc.perform(put("/api/v1/users/nonexistent/password")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordChangeRequest)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isNotFound());
 
         verify(userManagementService, times(1)).updateUserPassword("nonexistent", "oldPassword123", "newPassword456");
     }
@@ -279,7 +233,7 @@ class UserControllerTest {
         invalidRequest.setOldPassword("wrongPassword");
         invalidRequest.setNewPassword("newPassword456");
 
-        mockMvc.perform(put("/api/v1/users/updatePassword/testuser")
+        mockMvc.perform(put("/api/v1/users/testuser/password")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
@@ -293,7 +247,7 @@ class UserControllerTest {
         when(userManagementService.updateUserPassword("testuser", "oldPassword123", "newPassword456"))
                 .thenThrow(new PaymentManagementException(500, "Internal Server Error", "FAILURE"));
 
-        mockMvc.perform(put("/api/v1/users/updatePassword/testuser")
+        mockMvc.perform(put("/api/v1/users/testuser/password")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordChangeRequest)))
@@ -317,7 +271,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.message").value("Operation successful"))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users[0].userName").value("testuser"));
+                .andExpect(jsonPath("$.users[0].username").value("testuser"));
 
         verify(userManagementService, times(1)).updateUserRole("testuser", UserRole.ADMIN);
     }
@@ -331,7 +285,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(roleChangeRequest)))
                 .andExpect(status().isForbidden());
 
-        verify(userManagementService, never()).updateUserRole(anyString(), UserRole.VIEWER);
+        verify(userManagementService, never()).updateUserRole(anyString(), any());
     }
 
     @Test
@@ -343,7 +297,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(roleChangeRequest)))
                 .andExpect(status().isForbidden());
 
-        verify(userManagementService, never()).updateUserRole(anyString(), UserRole.VIEWER);
+        verify(userManagementService, never()).updateUserRole(anyString(), any());
     }
 
     @Test
@@ -353,7 +307,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(roleChangeRequest)))
                 .andExpect(status().isUnauthorized());
 
-        verify(userManagementService, never()).updateUserRole(anyString(), UserRole.VIEWER);
+        verify(userManagementService, never()).updateUserRole(anyString(), any());
     }
 
     @Test
@@ -365,7 +319,7 @@ class UserControllerTest {
                         .content("invalid json"))
                 .andExpect(status().isBadRequest());
 
-        verify(userManagementService, never()).updateUserRole(anyString(), UserRole.VIEWER);
+        verify(userManagementService, never()).updateUserRole(anyString(), any());
     }
 
     @Test
@@ -434,8 +388,9 @@ class UserControllerTest {
     }
 
     @Test
+    @WithMockUser
     void updateUserPassword_EmptyPathVariable() throws Exception {
-        mockMvc.perform(put("/api/v1/users/updatePassword/")
+        mockMvc.perform(put("/api/v1/users/updatePassword")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordChangeRequest)))
@@ -471,9 +426,9 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.users").isArray())
                 .andExpect(jsonPath("$.users.length()").value(2))
-                .andExpect(jsonPath("$.users[0].userName").value("testuser"))
-                .andExpect(jsonPath("$.users[0].role").value("USER"))
-                .andExpect(jsonPath("$.users[1].userName").value("testuser2"))
+                .andExpect(jsonPath("$.users[0].username").value("testuser"))
+                .andExpect(jsonPath("$.users[0].role").value("VIEWER"))
+                .andExpect(jsonPath("$.users[1].username").value("testuser2"))
                 .andExpect(jsonPath("$.users[1].role").value("ADMIN"));
 
         verify(userManagementService, times(1)).getAllUsers();

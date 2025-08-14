@@ -33,8 +33,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("api/v1/users").permitAll()
-                        .requestMatchers(HttpMethod.GET,"api/v1/reports/**").hasAnyRole("FINANCE_MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**/password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments").hasAnyRole("ADMIN", "FINANCE_MANAGER")
+                        .requestMatchers(HttpMethod.GET,"/api/v1/reports/**").hasAnyRole("FINANCE_MANAGER")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

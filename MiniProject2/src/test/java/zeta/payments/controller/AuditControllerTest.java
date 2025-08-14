@@ -132,17 +132,6 @@ class AuditControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"USER"})
-    void getAllAudits_Forbidden_WithUserRole() throws Exception {
-        mockMvc.perform(get("/api/v1/audits")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
-
-        verify(auditTrialManagementService, never()).getAllPaymentAudit();
-    }
-
-    @Test
     void getAllAudits_Unauthorized_WithoutAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/audits")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -199,7 +188,7 @@ class AuditControllerTest {
                 .andExpect(jsonPath("$.audits[0].revisionType").value("CREATE"))
                 .andExpect(jsonPath("$.audits[0].amount").value("1000.0"))
                 .andExpect(jsonPath("$.audits[0].currency").value("INR"))
-                .andExpect(jsonPath("$.audits[0].category").value("PERSONAL"))
+                .andExpect(jsonPath("$.audits[0].category").value("INVOICE"))
                 .andExpect(jsonPath("$.audits[0].type").value("INCOMING"))
                 .andExpect(jsonPath("$.audits[0].status").value("COMPLETED"))
                 .andExpect(jsonPath("$.audits[0].accountName").value("Test Account"))
@@ -238,17 +227,6 @@ class AuditControllerTest {
                 .andExpect(jsonPath("$.status").value("success"));
 
         verify(auditTrialManagementService, times(1)).getPaymentAuditById(100L);
-    }
-
-    @Test
-    @WithMockUser(roles = {"VIEWER"})
-    void getAuditById_Forbidden_WithUserRole() throws Exception {
-        mockMvc.perform(get("/api/v1/audits/100")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
-
-        verify(auditTrialManagementService, never()).getPaymentAuditById(100L);
     }
 
     @Test

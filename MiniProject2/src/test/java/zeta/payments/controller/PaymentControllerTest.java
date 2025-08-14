@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -13,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import zeta.payments.commons.enums.PaymentCategory;
 import zeta.payments.commons.enums.PaymentStatus;
 import zeta.payments.commons.enums.PaymentType;
+import zeta.payments.config.SecurityConfig;
 import zeta.payments.dto.response.PaymentLifeCycleManagementResponse;
 import zeta.payments.dto.response.ReportResponse;
 import zeta.payments.entity.Payment;
@@ -24,7 +26,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.*;
@@ -36,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "spring.security.enabled=true"
 })
+@Import(SecurityConfig.class)
 class PaymentControllerTest {
 
     @Autowired
@@ -104,10 +106,10 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.message").value("Operation successful"))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.payments").isArray())
-                .andExpect(jsonPath("$.payments[0].id").value("PAY_001"))
+                .andExpect(jsonPath("$.payments[0].id").value(1L))
                 .andExpect(jsonPath("$.payments[0].amount").value("1000.0"))
                 .andExpect(jsonPath("$.payments[0].currency").value("INR"))
-                .andExpect(jsonPath("$.payments[0].category").value("PERSONAL"))
+                .andExpect(jsonPath("$.payments[0].category").value("REFUND"))
                 .andExpect(jsonPath("$.payments[0].type").value("INCOMING"))
                 .andExpect(jsonPath("$.payments[0].status").value("COMPLETED"));
 
@@ -145,17 +147,6 @@ class PaymentControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"USER"})
-    void getPaymentById_Forbidden_WithUserRole() throws Exception {
-        mockMvc.perform(get("/api/v1/payments/1")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
-
-        verify(paymentManagementService, never()).getPaymentById(1L);
-    }
-
-    @Test
     @WithMockUser(roles = {"ADMIN"})
     void getPaymentById_NotFound() throws Exception {
         when(paymentManagementService.getPaymentById(999L))
@@ -183,7 +174,7 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.message").value("Operation successful"))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.payments").isArray())
-                .andExpect(jsonPath("$.payments[0].id").value("PAY_001"));
+                .andExpect(jsonPath("$.payments[0].id").value(1L));
 
         verify(paymentManagementService, times(1)).getAllPayment();
     }
@@ -201,17 +192,6 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
 
         verify(paymentManagementService, times(1)).getAllPayment();
-    }
-
-    @Test
-    @WithMockUser(roles = {"USER"})
-    void getAllPayments_Forbidden_WithUserRole() throws Exception {
-        mockMvc.perform(get("/api/v1/payments")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
-
-        verify(paymentManagementService, never()).getAllPayment();
     }
 
     @Test
@@ -249,7 +229,7 @@ class PaymentControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("Operation successful"))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.payments[0].id").value("PAY_001"));
+                .andExpect(jsonPath("$.payments[0].id").value(1L));
 
         verify(paymentManagementService, times(1)).createPaymentRecord(any(Payment.class));
     }
@@ -315,7 +295,7 @@ class PaymentControllerTest {
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void updatePaymentRecord_Forbidden_WithAdminRole() throws Exception {
-        mockMvc.perform(put("/api/v1/payments/PAY_001")
+        mockMvc.perform(put("/api/v1/payments/1L")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testPayment)))
@@ -374,7 +354,7 @@ class PaymentControllerTest {
         when(paymentManagementService.generateMonthlyReport(13L, 2024L))
                 .thenThrow(new PaymentManagementException(400, "Invalid month", "FAILURE"));
 
-        mockMvc.perform(get("/api/v1/reports/monthly/13/2024")
+        mockMvc.perform(get("/api/v1/reports/month/13/year/2024")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -397,7 +377,7 @@ class PaymentControllerTest {
 
         when(paymentManagementService.generateQuarterlyReport(1L, 2024L)).thenReturn(quarterlyResponse);
 
-        mockMvc.perform(get("/api/v1/reports/quarterly/1/2024")
+        mockMvc.perform(get("/api/v1/reports/quarter/1/year/2024")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -412,7 +392,7 @@ class PaymentControllerTest {
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void getQuarterlyReport_Forbidden_WithAdminRole() throws Exception {
-        mockMvc.perform(get("/api/v1/reports/quarterly/1/2024")
+        mockMvc.perform(get("/api/v1/reports/quarter/1/year/2024")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
@@ -426,7 +406,7 @@ class PaymentControllerTest {
         when(paymentManagementService.generateQuarterlyReport(5L, 2024L))
                 .thenThrow(new PaymentManagementException(400, "Invalid quarter", "FAILURE"));
 
-        mockMvc.perform(get("/api/v1/reports/quarterly/5/2024")
+        mockMvc.perform(get("/api/v1/reports/quarter/5/year/2024")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());

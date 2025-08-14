@@ -58,7 +58,7 @@ public class UserController {
                 passwordChangeRequest.getOldPassword(), passwordChangeRequest.getNewPassword()));
     }
 
-    @PutMapping(USERS + "role")
+    @PutMapping(USERS + "/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserLifeCycleManagementResponse> updateUserRole(
             @RequestBody RoleChangeRequest userToUpdate){
