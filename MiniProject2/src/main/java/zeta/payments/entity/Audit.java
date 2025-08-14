@@ -62,7 +62,7 @@ public class Audit {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    static class AuditId implements Serializable {
+    public static class AuditId implements Serializable {
         @Column(name = "payment_id")
         private Long paymentId;
 

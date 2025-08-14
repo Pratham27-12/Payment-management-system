@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  title: User Management API
+  description: API for managing users in the Zeta Payments system
+  version: 1.0.0
+  contact:
+    name: Zeta Payments Team
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+paths:
+  /users:
+    post:
+      tags:
+        - User Management
+      summary: Create a new user
+      description: Creates a new user in the system
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              userName: "john_doe"
+              password: "securePassword123"
+              email: "john.doe@example.com"
+              role: "VIEWER"
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLifeCycleManagementResponse'
+              example:
+                status: "SUCCESS"
+                message: "User Created Successfully"
+                users:
+                  - id: 1
+                    userName: "john_doe"
+                    email: "john.doe@example.com"
+                    role: "VIEWER"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: "FAILURE"
+                message: "User already exists with username: john_doe"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - User Management
+      summary: Get all users
+      description: Retrieves all users in the system (Admin only)
+      operationId: getAllUsers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLifeCycleManagementResponse'
+              example:
+                status: "SUCCESS"
+                message: "Users fetched successfully"
+                users:
+                  - id: 1
+                    userName: "admin"
+                    email: "admin@example.com"
+                    role: "ADMIN"
+                  - id: 2
+                    userName: "finance_user"
+                    email: "finance@example.com"
+                    role: "FINANCE_MANAGER"
+        '403':
+          description: Access denied - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userName}/password:
+    put:
+      tags:
+        - User Management
+      summary: Update user password
+      description: Updates the password for a specific user
+      operationId: updateUserPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userName
+          in: path
+          required: true
+          description: Username of the user whose password needs to be updated
+          schema:
+            type: string
+          example: "john_doe"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+            example:
+              userName: "john_doe"
+              oldPassword: "oldSecurePassword123"
+              newPassword: "newSecurePassword456"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLifeCycleManagementResponse'
+              example:
+                status: "SUCCESS"
+                message: "Password updated successfully"
+                users:
+                  - id: 1
+                    userName: "john_doe"
+                    email: "john.doe@example.com"
+                    role: "VIEWER"
+        '400':
+          description: Incorrect old password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: "FAILURE"
+                message: "Password is incorrect"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: "FAILURE"
+                message: "User not found with username: john_doe"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/role:
+    put:
+      tags:
+        - User Management
+      summary: Update user role
+      description: Updates the role for a specific user (Admin only)
+      operationId: updateUserRole
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleChangeRequest'
+            example:
+              userName: "john_doe"
+              role: "FINANCE_MANAGER"
+      responses:
+        '200':
+          description: User role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLifeCycleManagementResponse'
+              example:
+                status: "SUCCESS"
+                message: "User Role Updated Successfully"
+        '403':
+          description: Access denied - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found or role update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: "FAILURE"
+                message: "User not found or role update failed"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - userName
+        - password
+        - email
+        - role
+      properties:
+        userName:
+          type: string
+          description: Unique username for the user
+          example: "john_doe"
+        password:
+          type: string
+          format: password
+          description: User password (will be hashed)
+          example: "securePassword123"
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "john.doe@example.com"
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    PasswordChangeRequest:
+      type: object
+      required:
+        - userName
+        - oldPassword
+        - newPassword
+      properties:
+        userName:
+          type: string
+          description: Username of the user
+          example: "john_doe"
+        oldPassword:
+          type: string
+          format: password
+          description: Current password
+          example: "oldSecurePassword123"
+        newPassword:
+          type: string
+          format: password
+          description: New password
+          example: "newSecurePassword456"
+
+    RoleChangeRequest:
+      type: object
+      required:
+        - userName
+        - role
+      properties:
+        userName:
+          type: string
+          description: Username of the user whose role needs to be changed
+          example: "john_doe"
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserLifeCycleManagementResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Status of the operation
+          enum: ["SUCCESS", "FAILURE"]
+          example: "SUCCESS"
+        message:
+          type: string
+          description: Response message
+          example: "User Created Successfully"
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique user ID
+          example: 1
+        userName:
+          type: string
+          description: Username
+          example: "john_doe"
+        email:
+          type: string
+          format: email
+          description: User email
+          example: "john.doe@example.com"
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserRole:
+      type: string
+      enum:
+        - ADMIN
+        - FINANCE_MANAGER
+        - VIEWER
+      description: User role in the system
+      example: "VIEWER"
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["FAILURE"]
+          example: "FAILURE"
+        message:
+          type: string
+          description: Error message
+          example: "User not found"
+
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: User Management
+    description: Operations related to user management

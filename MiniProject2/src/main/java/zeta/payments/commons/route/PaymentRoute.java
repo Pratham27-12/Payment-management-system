@@ -11,6 +11,6 @@ public class PaymentRoute {
      public static final String UPDATE_USER_PASSWORD = USER_NAME + "/password";
     public static final String YEAR = "/year/{year}";
     public static final String REPORTS = "/reports";
-    public static final String MONTHLY = "/monthly/{month}" + YEAR;
-    public static final String QUARTERLY = "/quarterly/{quarter}" + YEAR;
+    public static final String MONTHLY = "/month/{month}" + YEAR;
+    public static final String QUARTERLY = "/quarter/{quarter}" + YEAR;
 }

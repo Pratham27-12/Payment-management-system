@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.util.logging.Logger;
 import static zeta.payments.commons.route.PaymentRoute.API;
 import static zeta.payments.commons.route.PaymentRoute.MONTHLY;
 import static zeta.payments.commons.route.PaymentRoute.PAYMENTS;
@@ -28,6 +28,7 @@ import static zeta.payments.commons.route.PaymentRoute.V1;
 @RestController
 @RequestMapping(API + V1)
 public class PaymentController {
+    Logger logger = Logger.getLogger(PaymentController.class.getName());
 
     private final PaymentManagementService paymentManagementService;
 
@@ -39,12 +40,14 @@ public class PaymentController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
     public ResponseEntity<PaymentLifeCycleManagementResponse> getPaymentById(
             @PathVariable("id") Long id) {
+        logger.info("Fetching payment by id: " + id);
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.getPaymentById(id));
     }
 
     @GetMapping(PAYMENTS)
     @PreAuthorize("hasRole('ADMIN') or hasRole('VIEWER') or hasRole('FINANCE_MANAGER')")
     public ResponseEntity<PaymentLifeCycleManagementResponse> getAllPayments() {
+        logger.info("Fetching all payments");
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.getAllPayment());
     }
 
@@ -52,6 +55,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('FINANCE_MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<PaymentLifeCycleManagementResponse> createPaymentRecord(
             @RequestBody Payment payment) {
+        logger.info("Creating new payment record");
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.createPaymentRecord(payment));
     }
 
@@ -60,6 +64,7 @@ public class PaymentController {
     public ResponseEntity<PaymentLifeCycleManagementResponse> updatePaymentRecord(
             @PathVariable("id") String id,
             @RequestBody Payment payment) {
+        logger.info("Updating payment record with id: " + id);
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.updatePayment(id, payment));
     }
 
@@ -69,6 +74,7 @@ public class PaymentController {
             @PathVariable("month") Long month,
             @PathVariable("year") Long year
     ) {
+        logger.info("Generating monthly report for month: " + month + ", year: " + year);
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.generateMonthlyReport(month, year));
     }
 
@@ -78,6 +84,7 @@ public class PaymentController {
             @PathVariable("quarter") Long quarter,
             @PathVariable("year") Long year
     ) {
+        logger.info("Generating quarterly report for quarter: " + quarter + ", year: " + year);
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.generateQuarterlyReport(quarter, year));
     }
 
@@ -85,6 +92,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentLifeCycleManagementResponse> deletePaymentById(
             @PathVariable("id") Long id) {
+        logger.info("Deleting payment by id: " + id);
         return ResponseEntityUtil.getResultWithResponseEntity(paymentManagementService.deletePaymentById(id));
     }
 }

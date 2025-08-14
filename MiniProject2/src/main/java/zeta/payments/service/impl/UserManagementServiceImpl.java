@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 import static zeta.payments.util.PasswordUtil.checkPassword;
 import static zeta.payments.util.PasswordUtil.hashPassword;
@@ -21,25 +22,30 @@ import static zeta.payments.util.PasswordUtil.hashPassword;
 @Service
 public class UserManagementServiceImpl implements UserManagementService, UserDetailsService {
 
+    Logger logger = Logger.getLogger(UserManagementServiceImpl.class.getName());
+
     @Autowired
     private UserRepository userRepository;
 
     @Override
     public UserLifeCycleManagementResponse createUser(User user) {
         try {
+            logger.info("Creating user with username: " + user.getUsername());
             String hashedPassword = hashPassword(user.getPassword());
             user.setPassword(hashedPassword);
             Optional<User> existingUser = userRepository.getUserByUserName(user.getUsername());
 
-            if (existingUser.isPresent())
+            if (existingUser.isPresent()) {
                 throw new PaymentManagementException(409, "User already exists with username: " + user.getUsername(), "FAILURE");
-
+            }
             userRepository.save(user);
+            logger.info("User created successfully: " + user.getUsername());
             return createUserResponse("User Created Successfully",List.of(user), "SUCCESS");
 
         } catch (PaymentManagementException e) {
-           throw new PaymentManagementException(e.getHttpStatus(), e.getMessage(), e.getStatus());
+            throw new PaymentManagementException(e.getHttpStatus(), e.getMessage(), e.getStatus());
         } catch (Exception e) {
+            logger.severe("An error occurred while creating user: " + e.getMessage());
             throw new PaymentManagementException(500, "An error occurred while creating user: " + e.getMessage(), "FAILURE");
         }
     }
@@ -48,14 +54,17 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
     public UserLifeCycleManagementResponse updateUserRole(String userToUpdate, UserRole role) {
 
         try {
+            logger.info("Updating role for user: " + userToUpdate + " to role: " + role);
             int updated = userRepository.updateUserRole(userToUpdate, role);
             if (updated == 1) {
                 return UserLifeCycleManagementResponse.builder().message("User Role Updated Successfully").status("SUCCESS").build();
             }
+            logger.warning("User not found or role update failed for user: " + userToUpdate);
             throw new PaymentManagementException(404, "User not found or role update failed", "FAILURE");
         } catch (PaymentManagementException e) {
             throw  new PaymentManagementException(e.getHttpStatus(), e.getMessage(), e.getStatus());
         } catch (Exception e) {
+            logger.severe("Internal Server Error while updating user role: " + e.getMessage());
             throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
@@ -63,21 +72,26 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
     @Override
     public UserLifeCycleManagementResponse getAllUsers() {
         try {
+            logger.info("Fetching all users");
             List<User> users = userRepository.findAll();
             return createUserResponse("Users fetched successfully", users, "SUCCESS");
         } catch (Exception e) {
+            logger.severe("An error occurred while fetching users: " + e.getMessage());
             throw new PaymentManagementException(500, "An error occurred while fetching users", "FAILURE");
         }
     }
 
     @Override
     public UserLifeCycleManagementResponse updateUserPassword(String userName, String oldPassword, String newPassword) {
+        logger.info("Updating password for user: " + userName);
         Optional<User> userOpt = userRepository.getUserByUserName(userName);
         if (!userOpt.isPresent()) {
+            logger.warning("User not found with username: " + userName);
             throw new PaymentManagementException(404, "User not found with username: " + userName, "FAILURE");
         }
         User user = userOpt.get();
         if (!checkPassword(oldPassword, user.getPassword())) {
+            logger.warning("Incorrect old password for user: " + userName);
             throw new PaymentManagementException(400, "Password is incorrect", "FAILURE");
         }
         String hashedNewPassword = hashPassword(newPassword);
@@ -85,6 +99,7 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
         if (updated == 1) {
             return createUserResponse("Password updated successfully",List.of(user), "SUCCESS");
         } else {
+            logger.severe("Internal Server Error while updating password for user: " + userName);
             throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }

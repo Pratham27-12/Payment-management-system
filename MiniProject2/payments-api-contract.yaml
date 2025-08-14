@@ -1,0 +1,479 @@
+openapi: 3.0.3
+info:
+  title: Payment Management API
+  description: API for managing payments, reports, and payment lifecycle operations
+  version: 1.0.0
+  contact:
+    name: Zeta Payments Team
+    email: payments@zeta.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://api.zeta.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /payments/{id}:
+    get:
+      tags:
+        - Payment Management
+      summary: Get payment by ID
+      description: Retrieve a specific payment record by its ID
+      operationId: getPaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLifeCycleManagementResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    put:
+      tags:
+        - Payment Management
+      summary: Update payment record
+      description: Update an existing payment record
+      operationId: updatePaymentRecord
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID to update
+          schema:
+            type: string
+            example: "123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+      responses:
+        '200':
+          description: Payment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLifeCycleManagementResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - Payment Management
+      summary: Delete payment by ID
+      description: Delete a specific payment record by its ID
+      operationId: deletePaymentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID to delete
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: Payment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLifeCycleManagementResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /payments:
+    get:
+      tags:
+        - Payment Management
+      summary: Get all payments
+      description: Retrieve all payment records
+      operationId: getAllPayments
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLifeCycleManagementResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    post:
+      tags:
+        - Payment Management
+      summary: Create payment record
+      description: Create a new payment record
+      operationId: createPaymentRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+      responses:
+        '200':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLifeCycleManagementResponse'
+        '400':
+          description: Bad request - invalid payment data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /reports/month/{month}/year/{year}:
+    get:
+      tags:
+        - Reports
+      summary: Get monthly report
+      description: Generate monthly payment report for specified month and year
+      operationId: getMonthlyReport
+      parameters:
+        - name: month
+          in: path
+          required: true
+          description: Month (1-12)
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 12
+            example: 3
+        - name: year
+          in: path
+          required: true
+          description: Year
+          schema:
+            type: integer
+            format: int64
+            minimum: 1970
+            example: 2024
+      responses:
+        '200':
+          description: Monthly report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '404':
+          description: Invalid month or year specified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /reports/quarter/{quarter}/year/{year}:
+    get:
+      tags:
+        - Reports
+      summary: Get quarterly report
+      description: Generate quarterly payment report for specified quarter and year
+      operationId: getQuarterlyReport
+      parameters:
+        - name: quarter
+          in: path
+          required: true
+          description: Quarter (1-4)
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 4
+            example: 2
+        - name: year
+          in: path
+          required: true
+          description: Year
+          schema:
+            type: integer
+            format: int64
+            minimum: 1970
+            example: 2024
+      responses:
+        '200':
+          description: Quarterly report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '404':
+          description: Invalid quarter or year specified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Payment:
+      type: object
+      required:
+        - amount
+        - currency
+        - category
+        - type
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Payment ID
+          example: 123
+          readOnly: true
+        amount:
+          type: string
+          description: Payment amount
+          example: "1000.50"
+        currency:
+          type: string
+          description: Payment currency
+          example: "USD"
+        category:
+          $ref: '#/components/schemas/PaymentCategory'
+        type:
+          $ref: '#/components/schemas/PaymentType'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        accountName:
+          type: string
+          description: Account name for the payment
+          example: "John Doe Account"
+        createdBy:
+          type: string
+          description: User who created the payment
+          example: "admin@zeta.com"
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation timestamp in epoch milliseconds
+          example: 1703001600000
+          readOnly: true
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update timestamp in epoch milliseconds
+          example: 1703001600000
+          readOnly: true
+
+    PaymentCategory:
+      type: string
+      enum:
+        - SALARY
+        - INVOICE
+        - REFUND
+        - VENDOR_SETTLEMENT
+      description: Category of the payment
+      example: SALARY
+
+    PaymentType:
+      type: string
+      enum:
+        - INCOMING
+        - OUTGOING
+      description: Type of payment transaction
+      example: INCOMING
+
+    PaymentStatus:
+      type: string
+      enum:
+        - PENDING
+        - PROCESSING
+        - COMPLETED
+      description: Current status of the payment
+      example: COMPLETED
+
+    PaymentLifeCycleManagementResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response message
+          example: "Payment retrieved successfully"
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+          description: List of payments
+        status:
+          type: string
+          description: Response status
+          example: "SUCCESS"
+
+    ReportResponse:
+      type: object
+      properties:
+        reportType:
+          type: string
+          description: Type of report
+          enum:
+            - MONTHLY
+            - QUARTERLY
+          example: MONTHLY
+        date:
+          type: string
+          format: date
+          description: Report generation date
+          example: "2024-01-15"
+        reportData:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ReportData'
+          description: Monthly/quarterly breakdown of payment data
+        balanceType:
+          type: string
+          enum:
+            - CREDIT
+            - DEBIT
+          description: Overall balance type
+          example: CREDIT
+        totalNetBalance:
+          type: number
+          format: double
+          description: Total net balance across all periods
+          example: 15000.75
+        status:
+          type: string
+          description: Response status
+          example: "SUCCESS"
+        message:
+          type: string
+          description: Additional message (usually for empty reports)
+          example: "No payments found for the specified period"
+
+    ReportData:
+      type: object
+      properties:
+        inComingPayments:
+          type: number
+          format: double
+          description: Total incoming payments amount
+          example: 25000.00
+        outGoingPayments:
+          type: number
+          format: double
+          description: Total outgoing payments amount
+          example: 10000.00
+        netBalance:
+          type: number
+          format: double
+          description: Net balance (incoming - outgoing)
+          example: 15000.00
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Error status
+          example: "FAILURE"
+        message:
+          type: string
+          description: Error message
+          example: "Payment not found"
+        httpStatus:
+          type: integer
+          description: HTTP status code
+          example: 404
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-15T10:30:00Z"
+
+tags:
+  - name: Payment Management
+    description: Operations for managing payment records
+  - name: Reports
+    description: Operations for generating payment reports

@@ -1,0 +1,260 @@
+openapi: 3.0.3
+info:
+  title: Payment Audit Management API
+  description: APIs for managing payment audit trails and lifecycle management
+  version: 1.0.0
+  contact:
+    name: Zeta Payments Team
+    email: payments@zeta.com
+
+servers:
+  - url: https://api.zeta.com/api/v1
+    description: Production server
+  - url: https://staging-api.zeta.com/api/v1
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Audit Management
+    description: APIs for managing payment audit trails
+
+paths:
+  /audits:
+    get:
+      tags:
+        - Audit Management
+      summary: Get all payment audits
+      description: Retrieves all payment audit records from the system. Requires ADMIN, VIEWER, or FINANCE_MANAGER role.
+      operationId: getAllAudits
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit records retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLifeCycleManagementResponse'
+              example:
+                message: "Audit records fetched successfully"
+                status: "success"
+                audits:
+                  - id:
+                      paymentId: 12345
+                      revisionCount: 1
+                    revisionType: "INSERT"
+                    amount: "1000.00"
+                    currency: "USD"
+                    category: "TRANSFER"
+                    type: "CREDIT"
+                    status: "COMPLETED"
+                    accountName: "John Doe"
+                    createdBy: "admin@zeta.com"
+                    createdAt: 1703097600000
+                    updatedAt: 1703097600000
+        '401':
+          description: Unauthorized - Invalid or missing authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions to access audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error occurred while fetching audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /audits/{id}:
+    get:
+      tags:
+        - Audit Management
+      summary: Get payment audit by ID
+      description: Retrieves audit records for a specific payment by payment ID. Requires ADMIN, VIEWER, or FINANCE_MANAGER role.
+      operationId: getAuditById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Payment ID to retrieve audit records for
+          schema:
+            type: integer
+            format: int64
+          example: 12345
+      responses:
+        '200':
+          description: Audit records for the specified payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLifeCycleManagementResponse'
+              example:
+                message: "Audit records fetched successfully"
+                status: "success"
+                audits:
+                  - id:
+                      paymentId: 12345
+                      revisionCount: 1
+                    revisionType: "INSERT"
+                    amount: "1000.00"
+                    currency: "USD"
+                    category: "TRANSFER"
+                    type: "CREDIT"
+                    status: "COMPLETED"
+                    accountName: "John Doe"
+                    createdBy: "admin@zeta.com"
+                    createdAt: 1703097600000
+                    updatedAt: 1703097600000
+        '400':
+          description: Bad request - Invalid payment ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Insufficient permissions to access audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Payment not found - No audit records exist for the specified payment ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error occurred while fetching audit records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuditLifeCycleManagementResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Response message
+          example: "Audit records fetched successfully"
+        status:
+          type: string
+          description: Response status
+          example: "success"
+        audits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audit'
+      required:
+        - message
+        - status
+        - audits
+
+    Audit:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/AuditId'
+        revisionType:
+          type: string
+          description: Type of revision (INSERT, UPDATE, DELETE)
+          example: "INSERT"
+        amount:
+          type: string
+          description: Payment amount
+          example: "1000.00"
+        currency:
+          type: string
+          description: Currency code
+          example: "USD"
+        category:
+          type: string
+          enum: [SALARY, INVOICE, REFUND, VENDOR_SETTLEMENT]
+          description: Payment category
+          example: "TRANSFER"
+        type:
+          type: string
+          enum: [INCOMING, OUTGOING]
+          description: Payment type
+          example: "CREDIT"
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED]
+          description: Payment status
+          example: "COMPLETED"
+        accountName:
+          type: string
+          description: Account holder name
+          example: "John Doe"
+        createdBy:
+          type: string
+          description: User who created the payment
+          example: "admin@zeta.com"
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation timestamp
+          example: 1703097600000
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update timestamp
+          example: 1703097600000
+
+    AuditId:
+      type: object
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+          description: Payment identifier
+          example: 12345
+        revisionCount:
+          type: integer
+          format: int64
+          description: Revision number for this payment
+          example: 1
+      required:
+        - paymentId
+        - revisionCount
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Unauthorized access"
+        code:
+          type: integer
+          description: Error code
+          example: 401
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-01T10:00:00Z"

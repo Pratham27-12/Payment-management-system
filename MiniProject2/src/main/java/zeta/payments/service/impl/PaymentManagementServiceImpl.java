@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 
@@ -26,6 +27,8 @@ import static zeta.payments.util.DateUtil.convertEpochToDateAndReturnMonth;
 
 @Service
 public class PaymentManagementServiceImpl implements PaymentManagementService {
+
+    Logger logger = Logger.getLogger(PaymentManagementServiceImpl.class.getName());
 
     @Autowired
     private PaymentRepository paymentRepository;
@@ -43,9 +46,11 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     public PaymentLifeCycleManagementResponse createPaymentRecord(Payment payment) {
         try {
             paymentRepository.saveAndFlush(payment);
+            logger.info("Payment created successfully: " + payment);
             return createPaymentSuccesResponse(List.of(payment), "Payment Created Successfully", "SUCCESS");
         } catch (Exception e) {
-            throw new PaymentManagementException(500, "Internal Server Error : " + e.getMessage() , "FAILURE");
+            logger.severe("Error creating payment: " + e.getMessage());
+            throw new PaymentManagementException(500, "Internal Server Error" , "FAILURE");
         }
     }
 
@@ -57,19 +62,24 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
                 String updatedBy = SecurityContextHolder.getContext().getAuthentication().getName();
                 payment.setCreatedBy(updatedBy);
                 paymentRepository.save(payment);
+                logger.info("Payment updated successfully: " + payment);
                 return createPaymentSuccesResponse(List.of(), "Payment Status Updated Successfully", "SUCCESS");
             }
+            logger.warning("Payment not found for update, id: " + id);
             throw new PaymentManagementException(404, "Payment not found", "FAILURE");
         } catch(PaymentManagementException ex){
             throw new PaymentManagementException(ex.getHttpStatus(), ex.getMessage(), ex.getStatus());
         } catch (Exception e) {
-            throw new PaymentManagementException(500, "Internal Server Error : " + e.getMessage(), "FAILURE");
+            logger.severe("Error updating payment: " + e.getMessage());
+            throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
 
     @Override
     public ReportResponse generateMonthlyReport(Long month, Long year) {
+        logger.info("Generating monthly report for month: " + month + ", year: " + year);
         if(month < 1 || month > 12 || year < 1970 || year > LocalDate.now().getYear()) {
+            logger.warning("Invalid month or year specified: month=" + month + ", year=" + year);
             throw new PaymentManagementException(404, "Invalid month or year specified", "FAILURE");
         }
 
@@ -80,6 +90,7 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         long endEpoch = endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
         List<Payment> payments = paymentRepository.findPaymentsBetween(startEpoch, endEpoch);
+        logger.info("Found " + payments.size() + " payments for the specified month and year.");
         return buildReport(payments, "MONTHLY");
     }
 
@@ -118,8 +129,10 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
         try {
             List<Payment> payments = paymentRepository.findAll();
             String message = "Payments Fetched Successfully";
+            logger.info("Fetched " + payments.size() + " payments successfully.");
             return createPaymentSuccesResponse(payments, message, "SUCCESS");
         } catch (Exception e) {
+            logger.severe("Error fetching all payments: " + e.getMessage());
             throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
@@ -128,11 +141,14 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
     public PaymentLifeCycleManagementResponse getPaymentById(Long id) {
         try {
             Optional<Payment> payment = Optional.ofNullable(paymentRepository.findById(id).orElseThrow(() -> new PaymentManagementException(404, "Payment not found", "FAILURE")));
+            logger.info("Fetched payment by id: " + id + ", result: " + (payment.isPresent() ? "FOUND" : "NOT FOUND"));
             return createPaymentSuccesResponse(payment.map(List::of).orElse(null), "Payment Fetch Successfully", "SUCCESS");
         } catch (PaymentManagementException ex) {
+            logger.severe("PaymentManagementException while fetching payment by id: " + id + ", error: " + ex.getMessage());
             throw new PaymentManagementException(ex.getHttpStatus(), ex.getMessage(), ex.getStatus());
         } catch (Exception e) {
-            throw new PaymentManagementException(500, "Internal Server Error : " + e.getMessage(), "FAILURE");
+            logger.severe("Error fetching payment by id: " + id + ", error: " + e.getMessage());
+            throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
 
@@ -142,13 +158,16 @@ public class PaymentManagementServiceImpl implements PaymentManagementService {
             Optional<Payment> payment = paymentRepository.findById(id);
             if (payment.isPresent()) {
                 paymentRepository.delete(payment.get());
+                logger.info("Payment deleted successfully: " + payment.get());
                 return createPaymentSuccesResponse(List.of(payment.get()), "Payment Deleted Successfully", "SUCCESS");
             }
+            logger.warning("Payment not found for deletion, id: " + id);
             throw new PaymentManagementException(404, "Payment not found", "FAILURE");
         } catch (PaymentManagementException ex) {
             throw new PaymentManagementException(ex.getHttpStatus(), ex.getMessage(), ex.getStatus());
         } catch (Exception e) {
-            throw new PaymentManagementException(500, "Internal Server Error : " + e.getMessage(), "FAILURE");
+            logger.severe("Error deleting payment by id: " + id + ", error: " + e.getMessage());
+            throw new PaymentManagementException(500, "Internal Server Error", "FAILURE");
         }
     }
 

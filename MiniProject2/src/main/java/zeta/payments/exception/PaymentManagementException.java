@@ -26,10 +26,23 @@ public class PaymentManagementException extends RuntimeException {
         this.status = status;
     }
 
-    public PaymentManagementException(Integer status, String message, Throwable throwable) {
+    public PaymentManagementException(Integer httpStatus, String message) {
+        super(message);
+        this.description = message;
+        this.httpStatus = httpStatus;
+    }
+
+    public PaymentManagementException(Integer httpStatus, String message, Throwable throwable) {
         super(message, throwable);
         this.description = message;
-        this.httpStatus = status;
+        this.httpStatus = httpStatus;
+    }
+
+    public PaymentManagementException(Integer httpStatus, String message, Throwable throwable, String status) {
+        super(message, throwable);
+        this.description = message;
+        this.httpStatus = httpStatus;
+        this.status = status;
     }
 }
 

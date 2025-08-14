@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.logging.Logger;
+
 import static zeta.payments.commons.route.PaymentRoute.API;
 import static zeta.payments.commons.route.PaymentRoute.UPDATE_USER_PASSWORD;
 import static zeta.payments.commons.route.PaymentRoute.USERS;
@@ -26,6 +28,8 @@ import static zeta.payments.commons.route.PaymentRoute.V1;
 @RequestMapping(API + V1)
 public class UserController {
 
+    Logger logger = Logger.getLogger(UserController.class.getName());
+
     private final UserManagementService userManagementService;
 
     public UserController(UserManagementServiceImpl userManagementServiceImpl) {
@@ -34,12 +38,14 @@ public class UserController {
 
     @PostMapping(USERS)
     public ResponseEntity<UserLifeCycleManagementResponse> createUser(@RequestBody User user) {
+        logger.info("Creating user: " + user.getUsername());
         return ResponseEntityUtil.getResultWithResponseEntity(userManagementService.createUser(user));
     }
 
     @GetMapping(USERS)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserLifeCycleManagementResponse> getAllUser() {
+        logger.info("Fetching all users");
         return ResponseEntityUtil.getResultWithResponseEntity(userManagementService.getAllUsers());
     }
 
@@ -47,6 +53,7 @@ public class UserController {
     public ResponseEntity<UserLifeCycleManagementResponse> updateUserPassword(
             @PathVariable("userName") String userName,
             @RequestBody PasswordChangeRequest passwordChangeRequest) {
+        logger.info("Updating password for user: " + userName);
         return ResponseEntityUtil.getResultWithResponseEntity(userManagementService.updateUserPassword(userName,
                 passwordChangeRequest.getOldPassword(), passwordChangeRequest.getNewPassword()));
     }
@@ -55,6 +62,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserLifeCycleManagementResponse> updateUserRole(
             @RequestBody RoleChangeRequest userToUpdate){
+        logger.info("Updating role for user: " + userToUpdate.getUserName());
         return ResponseEntityUtil.getResultWithResponseEntity(
                 userManagementService.updateUserRole(userToUpdate.getUserName(), userToUpdate.getRole()));
     }
