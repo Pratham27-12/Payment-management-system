@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static zeta.payments.util.PasswordUtil.checkPassword;
 import static zeta.payments.util.PasswordUtil.hashPassword;
@@ -33,11 +34,15 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
             logger.info("Creating user with username: " + user.getUsername());
             String hashedPassword = hashPassword(user.getPassword());
             user.setPassword(hashedPassword);
+            user.setRole(UserRole.VIEWER);
             Optional<User> existingUser = userRepository.getUserByUserName(user.getUsername());
 
-            if (existingUser.isPresent()) {
+            if(!isEmailValid(user.getEmail()))
+                throw new PaymentManagementException(400, "Invalid email format: " + user.getEmail(), "FAILURE");
+
+            if (existingUser.isPresent())
                 throw new PaymentManagementException(409, "User already exists with username: " + user.getUsername(), "FAILURE");
-            }
+
             userRepository.save(user);
             logger.info("User created successfully: " + user.getUsername());
             return createUserResponse("User Created Successfully",List.of(user), "SUCCESS");
@@ -116,5 +121,10 @@ public class UserManagementServiceImpl implements UserManagementService, UserDet
                 .users(users)
                 .status(status)
                 .build();
+    }
+
+    private boolean isEmailValid(String email) {
+        String regexPattern = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
+        return Pattern.compile(regexPattern).matcher(email).matches();
     }
 }
