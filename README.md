@@ -41,19 +41,19 @@ The application follows a layered architecture pattern ensuring separation of co
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     API Layer                               │
-│  Controllers (REST Endpoints) + OpenAPI Contracts          │
+│  Controllers (REST Endpoints) + OpenAPI Contracts           │
 ├─────────────────────────────────────────────────────────────┤
 │                   Service Layer                             │
 │  Business Logic + Transaction Management                    │
 ├─────────────────────────────────────────────────────────────┤
 │                  Repository Layer                           │
-│  Data Access Objects + JPA Repositories                    │
+│  Data Access Objects + JPA Repositories                     │
 ├─────────────────────────────────────────────────────────────┤
 │                   Entity Layer                              │
-│  JPA Entities + Database Mappings                          │
+│  JPA Entities + Database Mappings                           │
 ├─────────────────────────────────────────────────────────────┤
 │                  Database Layer                             │
-│  PostgreSQL + Flyway Migrations + Triggers                 │
+│  PostgreSQL + Flyway Migrations + Triggers                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
